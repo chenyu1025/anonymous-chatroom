@@ -18,18 +18,26 @@ export async function POST(request: NextRequest) {
     // 检查是否已存在用户
     const { data: existingUser } = await supabase
       .from('users')
-      .select('id, user_type')
+      .select('id, user_type, theme_id')
       .eq('session_id', sessionId)
       .single()
 
     if (existingUser) {
+      // 如果请求中包含 themeId，则更新它
+      const updates: any = {
+        is_online: true,
+        last_seen: new Date().toISOString(),
+      }
+      
+      const { themeId } = await request.json().catch(() => ({}))
+      if (themeId && existingUser.user_type === 'owner') {
+        updates.theme_id = themeId
+      }
+
       // 更新在线状态和最后活跃时间
       const { data, error } = await supabase
         .from('users')
-        .update({
-          is_online: true,
-          last_seen: new Date().toISOString(),
-        })
+        .update(updates)
         .eq('id', existingUser.id)
         .select()
         .single()

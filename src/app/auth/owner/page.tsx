@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { setUserType } from '@/lib/session'
+import { setUserType, getSessionId } from '@/lib/session'
+import ThemeSelector from '@/components/ThemeSelector'
+import { DEFAULT_THEME_ID } from '@/lib/themes'
 
 export default function OwnerAuth() {
   const [password, setPassword] = useState('')
+  const [selectedThemeId, setSelectedThemeId] = useState(DEFAULT_THEME_ID)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -27,6 +30,20 @@ export default function OwnerAuth() {
       const data = await response.json()
 
       if (data.success) {
+        // 更新用户主题
+        const sessionId = getSessionId()
+        if (sessionId) {
+          await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userType: 'owner',
+              sessionId: sessionId,
+              themeId: selectedThemeId
+            })
+          }).catch(console.error)
+        }
+
         setUserType('owner')
         router.push('/')
       } else {
@@ -44,10 +61,15 @@ export default function OwnerAuth() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">聊天室主人</h1>
-          <p className="text-gray-600">请输入密码进入聊天室</p>
+          <p className="text-gray-600">选择您的气泡主题并输入密码</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <ThemeSelector 
+            currentThemeId={selectedThemeId}
+            onSelect={setSelectedThemeId}
+          />
+          
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               密码

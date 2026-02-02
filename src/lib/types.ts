@@ -4,6 +4,10 @@ export type Message = {
   user_id: string
   user_type: 'owner' | 'guest'
   created_at: string
+  users?: {
+    session_id: string
+    theme_id?: string
+  }
 }
 
 export type User = {

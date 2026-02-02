@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       .from('messages')
       .select(`
         *,
-        users!inner(session_id)
+        users!inner(session_id, theme_id)
       `)
       .order('created_at', { ascending: false })
       .limit(limit)

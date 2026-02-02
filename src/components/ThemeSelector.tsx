@@ -1,0 +1,44 @@
+'use client'
+
+import { OWNER_THEMES, Theme } from '@/lib/themes'
+import Image from 'next/image'
+
+interface ThemeSelectorProps {
+  currentThemeId: string
+  onSelect: (themeId: string) => void
+}
+
+export default function ThemeSelector({ currentThemeId, onSelect }: ThemeSelectorProps) {
+  return (
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
+      <h3 className="text-sm font-medium text-gray-700 mb-3">选择气泡主题</h3>
+      <div className="grid grid-cols-5 gap-3">
+        {OWNER_THEMES.map((theme) => (
+          <button
+            key={theme.id}
+            onClick={() => onSelect(theme.id)}
+            className={`relative flex flex-col items-center p-2 rounded-lg transition-all ${
+              currentThemeId === theme.id
+                ? 'bg-purple-50 ring-2 ring-purple-500 ring-offset-2'
+                : 'hover:bg-gray-50'
+            }`}
+          >
+            <div className={`relative w-10 h-10 rounded-full overflow-hidden border-2 mb-1 ${
+              currentThemeId === theme.id ? 'border-purple-400' : 'border-gray-200'
+            }`}>
+              <Image
+                src={theme.avatar}
+                alt={theme.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <span className="text-[10px] text-gray-600 truncate w-full text-center">
+              {theme.name}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
