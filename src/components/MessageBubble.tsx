@@ -17,17 +17,18 @@ export default function MessageBubble({ message, isCurrentUser, userType }: Mess
   const getBubbleStyles = () => {
     if (userType === 'owner') {
       return isCurrentUser
-        ? 'bg-purple-500 text-white ml-auto'
+        ? 'bg-purple-600 text-white'
         : 'bg-purple-100 text-gray-800'
     } else {
       return isCurrentUser
-        ? 'bg-gray-500 text-white ml-auto'
+        ? 'bg-gray-600 text-white'
         : 'bg-gray-100 text-gray-800'
     }
   }
 
   const getContainerStyles = () => {
-    return isCurrentUser ? 'justify-end' : 'justify-start'
+    // 主人在左边，访客（匿名）在右边
+    return userType === 'owner' ? 'justify-start' : 'justify-end'
   }
 
   return (
