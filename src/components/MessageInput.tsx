@@ -19,6 +19,9 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
   const fileInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const startYRef = useRef(0)
+  const shouldCancelRef = useRef(false)
+  const [isCanceling, setIsCanceling] = useState(false)
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -114,7 +117,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isRecording) return
-    
+
     const currentY = e.touches[0].clientY
     const diff = startYRef.current - currentY
 
@@ -197,16 +200,22 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
             <button
               onMouseDown={startRecording}
               onMouseUp={stopRecording}
+              onMouseLeave={handleMouseLeave}
               onTouchStart={startRecording}
               onTouchEnd={stopRecording}
+              onTouchMove={handleTouchMove}
               className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap ${isRecording
-                  ? 'bg-red-500 text-white'
-                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
+                : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
                 }`}
               type="button"
             >
-              {isRecording ? <Square size={20} /> : <Mic size={20} />}
-              <span>{isRecording ? '松开' : '按住'}</span>
+              {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
+              <span>
+                {isRecording
+                  ? (isCanceling ? '松开取消' : '松开发送')
+                  : '按住说话'}
+              </span>
             </button>
           </div>
         ) : (
