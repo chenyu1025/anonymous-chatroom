@@ -4,8 +4,9 @@ import { getSessionId } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userType } = await request.json()
-    const sessionId = getSessionId()
+    const { userType, sessionId: clientSessionId } = await request.json()
+    // 优先使用客户端传来的 sessionId，因为服务端无法访问 localStorage
+    const sessionId = clientSessionId
 
     if (!sessionId) {
       return NextResponse.json(

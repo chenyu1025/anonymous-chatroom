@@ -31,7 +31,7 @@ export default function ChatRoom() {
     fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userType: type })
+      body: JSON.stringify({ userType: type, sessionId: sessionId })
     }).catch(console.error)
   }, [])
 
