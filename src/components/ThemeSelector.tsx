@@ -22,8 +22,9 @@ export default function ThemeSelector({ currentThemeId, onSelect }: ThemeSelecto
                 ? 'bg-purple-50 ring-2 ring-purple-500 ring-offset-2'
                 : 'hover:bg-gray-50'
             }`}
+            title={theme.name} // 将名称移到 tooltip 中
           >
-            <div className={`relative w-10 h-10 rounded-full overflow-hidden border-2 mb-1 ${
+            <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
               currentThemeId === theme.id ? 'border-purple-400' : 'border-gray-200'
             }`}>
               <Image
@@ -33,9 +34,6 @@ export default function ThemeSelector({ currentThemeId, onSelect }: ThemeSelecto
                 className="object-cover"
               />
             </div>
-            <span className="text-[10px] text-gray-600 truncate w-full text-center">
-              {theme.name}
-            </span>
           </button>
         ))}
       </div>
