@@ -17,16 +17,13 @@ export default function ThemeSelector({ currentThemeId, onSelect }: ThemeSelecto
           <button
             key={theme.id}
             onClick={() => onSelect(theme.id)}
-            className={`relative flex flex-col items-center p-2 rounded-lg transition-all ${
-              currentThemeId === theme.id
+            className={`relative flex flex-col items-center p-2 rounded-lg transition-all ${currentThemeId === theme.id
                 ? 'bg-purple-50 ring-2 ring-purple-500 ring-offset-2'
                 : 'hover:bg-gray-50'
-            }`}
-            title={theme.name} // 将名称移到 tooltip 中
+              }`}
           >
-            <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
-              currentThemeId === theme.id ? 'border-purple-400' : 'border-gray-200'
-            }`}>
+            <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${currentThemeId === theme.id ? 'border-purple-400' : 'border-gray-200'
+              }`}>
               <Image
                 src={theme.avatar}
                 alt={theme.name}
