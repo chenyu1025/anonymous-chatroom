@@ -4,17 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import MessageBubble from '@/components/MessageBubble'
 import MessageInput from '@/components/MessageInput'
+import { supabase } from '@/lib/supabase'
+import { Message } from '@/lib/types'
 import { getSessionId, getUserType } from '@/lib/session'
 import { Users, Settings } from 'lucide-react'
-
-// 模拟消息类型
-interface Message {
-  id: string
-  content: string
-  user_id: string
-  user_type: 'owner' | 'guest'
-  created_at: string
-}
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -32,28 +26,52 @@ export default function ChatRoom() {
     setCurrentUserId(sessionId)
     setUserType(type)
     setLoading(false)
+
+    // 上报在线状态
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userType: type })
+    }).catch(console.error)
   }, [])
 
-  // 模拟消息数据
+  // 获取初始消息和订阅实时更新
   useEffect(() => {
-    if (!loading) {
-      const mockMessages: Message[] = [
-        {
-          id: '1',
-          content: '欢迎来到匿名聊天室！',
-          user_id: 'system',
-          user_type: 'owner',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          content: '这是一个支持多人实时对话的聊天室。',
-          user_id: 'system',
-          user_type: 'owner',
-          created_at: new Date(Date.now() - 60000).toISOString()
+    if (loading) return
+
+    // 1. 获取历史消息
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch('/api/messages?limit=100')
+        const data = await res.json()
+        if (data.messages) {
+          setMessages(data.messages.reverse()) // 翻转以按时间正序显示
         }
-      ]
-      setMessages(mockMessages)
+      } catch (error) {
+        console.error('Failed to fetch messages:', error)
+      }
+    }
+    fetchMessages()
+
+    // 2. 订阅实时消息
+    const channel = supabase
+      .channel('room1')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload: RealtimePostgresChangesPayload<Message>) => {
+          const newMessage = payload.new as Message
+          setMessages((prev) => [...prev, newMessage])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   }, [loading])
 
@@ -61,15 +79,20 @@ export default function ChatRoom() {
   const sendMessage = async (content: string) => {
     if (!currentUserId) return
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: content.trim(),
-      user_id: currentUserId,
-      user_type: userType,
-      created_at: new Date().toISOString()
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          userType,
+          userId: currentUserId
+        })
+      })
+      // 不需要手动更新 state，因为实时订阅会处理
+    } catch (error) {
+      console.error('Failed to send message:', error)
     }
-
-    setMessages(prev => [...prev, newMessage])
   }
 
   // 滚动到底部
