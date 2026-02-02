@@ -1,12 +1,18 @@
 export const getSessionId = (): string => {
   if (typeof window === 'undefined') return ''
 
-  let sessionId = localStorage.getItem('chatroom_session_id')
-  if (!sessionId) {
-    sessionId = Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
-    localStorage.setItem('chatroom_session_id', sessionId)
+  try {
+    let sessionId = localStorage.getItem('chatroom_session_id')
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
+      localStorage.setItem('chatroom_session_id', sessionId)
+    }
+    return sessionId
+  } catch (e) {
+    // 如果 localStorage 不可用（如隐身模式或禁用 Cookie），生成临时 ID
+    console.warn('LocalStorage access failed, using temporary session id', e)
+    return Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
   }
-  return sessionId
 }
 
 export const getUserType = (): 'owner' | 'guest' => {
