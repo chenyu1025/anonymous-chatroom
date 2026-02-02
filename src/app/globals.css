@@ -21,19 +21,22 @@
 }
 
 /* 消息动画 */
-@keyframes slideInUp {
-  from {
-    transform: translateY(20px);
+@keyframes popIn {
+  0% {
+    transform: scale(0.8) translateY(10px);
     opacity: 0;
   }
-  to {
-    transform: translateY(0);
+  70% {
+    transform: scale(1.05) translateY(-2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
     opacity: 1;
   }
 }
 
 .message-animate {
-  animation: slideInUp 0.3s ease-out;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* 响应式字体大小 */
