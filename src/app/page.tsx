@@ -7,8 +7,10 @@ import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
 import { Message } from '@/lib/types'
 import { getSessionId, getUserType } from '@/lib/session'
-import { Users, Settings } from 'lucide-react'
+import { Users, Settings, X } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import ThemeSelector from '@/components/ThemeSelector'
+import { DEFAULT_THEME_ID } from '@/lib/themes'
 
 export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -16,6 +18,8 @@ export default function ChatRoom() {
   const [currentUserId, setCurrentUserId] = useState('')
   const [loading, setLoading] = useState(true)
   const [userType, setUserType] = useState<'owner' | 'guest'>('guest')
+  const [showThemeSelector, setShowThemeSelector] = useState(false)
+  const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -32,8 +36,48 @@ export default function ChatRoom() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userType: type, sessionId: sessionId })
-    }).catch(console.error)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user && data.user.theme_id) {
+          setCurrentThemeId(data.user.theme_id)
+        }
+      })
+      .catch(console.error)
   }, [])
+
+  // 切换主题
+  const handleThemeChange = async (themeId: string) => {
+    setCurrentThemeId(themeId)
+    setShowThemeSelector(false)
+
+    // 1. 更新数据库中的用户主题
+    await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userType,
+        sessionId: currentUserId,
+        themeId
+      })
+    }).catch(console.error)
+
+    // 2. 更新本地消息显示（针对所有该用户的历史消息）
+    setMessages(prev => prev.map(msg => {
+      // 检查是否是当前用户的消息（通过 session_id 匹配，或者直接通过 user_type 简化判断）
+      // 注意：这里我们通过 API 返回的 users 对象中的 session_id 来匹配更准确
+      if (msg.users?.session_id === currentUserId) {
+        return {
+          ...msg,
+          users: {
+            ...msg.users,
+            theme_id: themeId
+          }
+        }
+      }
+      return msg
+    }))
+  }
 
   // 获取初始消息和订阅实时更新
   useEffect(() => {
@@ -140,9 +184,41 @@ export default function ChatRoom() {
                 <Settings size={20} />
               </button>
             )}
+            {userType === 'owner' && (
+              <button
+                onClick={() => setShowThemeSelector(true)}
+                className="text-gray-600 hover:text-gray-800"
+                title="切换主题"
+              >
+                <Settings size={20} />
+              </button>
+            )}
           </div>
         </div>
       </header>
+
+      {/* 主题选择弹窗 */}
+      {showThemeSelector && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-medium text-gray-700">切换气泡主题</h3>
+              <button
+                onClick={() => setShowThemeSelector(false)}
+                className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <ThemeSelector
+                currentThemeId={currentThemeId}
+                onSelect={handleThemeChange}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 消息区域 */}
       <div className="flex-1 overflow-y-auto p-4">
