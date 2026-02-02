@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, userType, userId } = await request.json()
+    const { content, userType, userId, type = 'text', fileUrl } = await request.json()
 
-    if (!content || !userType || !userId) {
+    if ((!content && !fileUrl) || !userType || !userId) {
       return NextResponse.json(
         { error: '缺少必要参数' },
         { status: 400 }
@@ -80,9 +80,11 @@ export async function POST(request: NextRequest) {
       .from('messages')
       .insert([
         {
-          content: content.trim(),
+          content: content?.trim() || (type === 'image' ? '[图片]' : '[语音]'),
           user_id: user.id, // 使用正确的 UUID
           user_type: userType,
+          type,
+          file_url: fileUrl
         }
       ])
       .select()

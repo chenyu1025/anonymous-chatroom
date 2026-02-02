@@ -55,7 +55,23 @@ export default function MessageBubble({ message, isCurrentUser, userType }: Mess
             style={{ borderRightColor: theme.arrowColor }}
           />
         )}
-        <p className="text-sm leading-relaxed">{message.content}</p>
+        {message.type === 'image' && message.file_url ? (
+          <div className="relative w-48 h-48 mb-1 rounded-lg overflow-hidden">
+            <Image
+              src={message.file_url}
+              alt="图片"
+              fill
+              className="object-cover cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => window.open(message.file_url, '_blank')}
+            />
+          </div>
+        ) : message.type === 'audio' && message.file_url ? (
+          <div className="min-w-[200px] mb-1">
+            <audio controls src={message.file_url} className="w-full h-8" />
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        )}
         <p className={`text-xs mt-1 ${userType === 'owner' ? 'opacity-70' : (isCurrentUser ? 'text-gray-300' : 'text-gray-500')}`}>
           {formatTime(message.created_at)}
         </p>

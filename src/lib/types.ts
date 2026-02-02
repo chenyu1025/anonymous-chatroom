@@ -4,6 +4,8 @@ export type Message = {
   user_id: string
   user_type: 'owner' | 'guest'
   created_at: string
+  type?: 'text' | 'image' | 'audio'
+  file_url?: string
   users?: {
     session_id: string
     theme_id?: string

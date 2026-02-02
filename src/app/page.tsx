@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import MessageBubble from '@/components/MessageBubble'
 import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
 import { Message } from '@/lib/types'
 import { getSessionId, getUserType } from '@/lib/session'
-import { Users, Settings, X } from 'lucide-react'
+import { Users, Settings, X, Palette, LogOut } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID } from '@/lib/themes'
@@ -16,11 +16,19 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([])
   const [onlineUsers, setOnlineUsers] = useState(1)
   const [currentUserId, setCurrentUserId] = useState('')
+  const [currentUserUuid, setCurrentUserUuid] = useState('')
   const [loading, setLoading] = useState(true)
   const [userType, setUserType] = useState<'owner' | 'guest'>('guest')
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevScrollHeightRef = useRef(0)
+  const isLoadingMoreRef = useRef(false)
+
   const router = useRouter()
 
   // 初始化用户
@@ -30,6 +38,12 @@ export default function ChatRoom() {
     setCurrentUserId(sessionId)
     setUserType(type)
     setLoading(false)
+
+    // 尝试从本地存储恢复主题
+    const savedThemeId = localStorage.getItem('chatroom_theme_id')
+    if (savedThemeId) {
+      setCurrentThemeId(savedThemeId)
+    }
 
     // 上报在线状态
     fetch('/api/users', {
@@ -41,6 +55,8 @@ export default function ChatRoom() {
       .then(data => {
         if (data.user && data.user.theme_id) {
           setCurrentThemeId(data.user.theme_id)
+          // 同步到本地存储，确保多端同步
+          localStorage.setItem('chatroom_theme_id', data.user.theme_id)
         }
       })
       .catch(console.error)
@@ -49,6 +65,7 @@ export default function ChatRoom() {
   // 切换主题
   const handleThemeChange = async (themeId: string) => {
     setCurrentThemeId(themeId)
+    localStorage.setItem('chatroom_theme_id', themeId)
     setShowThemeSelector(false)
 
     // 1. 更新数据库中的用户主题
@@ -64,13 +81,16 @@ export default function ChatRoom() {
 
     // 2. 更新本地消息显示（针对所有该用户的历史消息）
     setMessages(prev => prev.map(msg => {
-      // 检查是否是当前用户的消息（通过 session_id 匹配，或者直接通过 user_type 简化判断）
-      // 注意：这里我们通过 API 返回的 users 对象中的 session_id 来匹配更准确
-      if (msg.users?.session_id === currentUserId) {
+      // 优先使用 UUID 匹配（适用于所有消息），降级使用 session_id 匹配（适用于带有 users 关联信息的消息）
+      const isMyMessage = currentUserUuid
+        ? msg.user_id === currentUserUuid
+        : msg.users?.session_id === currentUserId
+
+      if (isMyMessage) {
         return {
           ...msg,
           users: {
-            ...msg.users,
+            ...(msg.users || { session_id: currentUserId }), // 如果 users 不存在，补全 session_id
             theme_id: themeId
           }
         }
@@ -86,10 +106,13 @@ export default function ChatRoom() {
     // 1. 获取历史消息
     const fetchMessages = async () => {
       try {
-        const res = await fetch('/api/messages?limit=100')
+        const res = await fetch('/api/messages?limit=50')
         const data = await res.json()
         if (data.messages) {
           setMessages(data.messages.reverse()) // 翻转以按时间正序显示
+          if (data.messages.length < 50) {
+            setHasMore(false)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch messages:', error)
@@ -109,6 +132,15 @@ export default function ChatRoom() {
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
           const newMessage = payload.new as Message
+
+          // 如果是自己发的消息，注入当前主题和 session_id
+          if (currentUserUuid && newMessage.user_id === currentUserUuid) {
+            newMessage.users = {
+              session_id: currentUserId,
+              theme_id: currentThemeId
+            }
+          }
+
           setMessages((prev) => [...prev, newMessage])
         }
       )
@@ -120,7 +152,7 @@ export default function ChatRoom() {
   }, [loading])
 
   // 发送消息
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, type: 'text' | 'image' | 'audio' = 'text', fileUrl?: string) => {
     if (!currentUserId) return
 
     try {
@@ -130,7 +162,9 @@ export default function ChatRoom() {
         body: JSON.stringify({
           content,
           userType,
-          userId: currentUserId
+          userId: currentUserId,
+          type,
+          fileUrl
         })
       })
       // 不需要手动更新 state，因为实时订阅会处理
@@ -144,20 +178,82 @@ export default function ChatRoom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  useEffect(() => {
-    scrollToBottom()
+  // 加载更多消息
+  const loadMoreMessages = async () => {
+    if (isLoadingMore || !hasMore || messages.length === 0) return
+
+    setIsLoadingMore(true)
+    isLoadingMoreRef.current = true
+
+    // 记录当前滚动高度
+    if (containerRef.current) {
+      prevScrollHeightRef.current = containerRef.current.scrollHeight
+    }
+
+    try {
+      const oldestMessage = messages[0]
+      const res = await fetch(`/api/messages?limit=50&before=${oldestMessage.created_at}`)
+      if (!res.ok) throw new Error('Network response was not ok')
+
+      const data = await res.json()
+
+      if (data.messages && data.messages.length > 0) {
+        const newMessages = data.messages.reverse()
+        setMessages(prev => [...newMessages, ...prev])
+        if (data.messages.length < 50) setHasMore(false)
+      } else {
+        setHasMore(false)
+      }
+    } catch (error) {
+      console.error('Failed to load more messages:', error)
+      isLoadingMoreRef.current = false // 发生错误时重置，避免错误的滚动调整
+      // 可以在这里添加用户提示
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  // 监听滚动
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop } = e.currentTarget
+    if (scrollTop < 50 && hasMore && !isLoadingMore) {
+      loadMoreMessages()
+    }
+  }
+
+  // 处理消息更新后的滚动位置
+  useLayoutEffect(() => {
+    // 如果是加载更多，恢复滚动位置
+    if (isLoadingMoreRef.current && containerRef.current) {
+      const newScrollHeight = containerRef.current.scrollHeight
+      const diff = newScrollHeight - prevScrollHeightRef.current
+      containerRef.current.scrollTop = diff
+      isLoadingMoreRef.current = false
+    } else {
+      // 如果是新消息（且不是加载更多），滚动到底部
+      scrollToBottom()
+    }
   }, [messages])
+
+  // 退出主人模式
+  const handleLogout = () => {
+    if (confirm('确定要退出主人模式吗？')) {
+      localStorage.setItem('chatroom_user_type', 'guest')
+      setUserType('guest')
+      window.location.reload()
+    }
+  }
 
   if (loading) {
     return (
-      <div className="h-screen bg-gray-50 flex items-center justify-center">
+      <div className="h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">加载中...</div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
       {/* 头部 */}
       <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
@@ -185,13 +281,22 @@ export default function ChatRoom() {
               </button>
             )}
             {userType === 'owner' && (
-              <button
-                onClick={() => setShowThemeSelector(true)}
-                className="text-gray-600 hover:text-gray-800"
-                title="切换主题"
-              >
-                <Settings size={20} />
-              </button>
+              <>
+                <button
+                  onClick={() => setShowThemeSelector(true)}
+                  className="text-gray-600 hover:text-gray-800"
+                  title="切换主题"
+                >
+                  <Palette size={20} />
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-red-600"
+                  title="退出主人模式"
+                >
+                  <LogOut size={20} />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -221,7 +326,22 @@ export default function ChatRoom() {
       )}
 
       {/* 消息区域 */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 [overflow-anchor:none]"
+      >
+        {hasMore && (
+          <div className="text-center py-2">
+            <button
+              onClick={loadMoreMessages}
+              disabled={isLoadingMore}
+              className="text-sm text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-1 rounded-full hover:bg-purple-50 transition-colors"
+            >
+              {isLoadingMore ? '加载中...' : '点击加载更多历史消息'}
+            </button>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">

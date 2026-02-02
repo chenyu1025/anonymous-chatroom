@@ -4,7 +4,7 @@ import { getSessionId } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userType, sessionId: clientSessionId } = await request.json()
+    const { userType, sessionId: clientSessionId, themeId } = await request.json()
     // 优先使用客户端传来的 sessionId，因为服务端无法访问 localStorage
     const sessionId = clientSessionId
 
@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
         last_seen: new Date().toISOString(),
       }
       
-      const { themeId } = await request.json().catch(() => ({}))
       if (themeId && existingUser.user_type === 'owner') {
         updates.theme_id = themeId
       }
