@@ -52,12 +52,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 先尝试查找用户
+    let { data: user } = await supabase
+      .from('users')
+      .select('id')
+      .eq('session_id', userId)
+      .single()
+
+    // 如果用户不存在，尝试通过 ID 查找（兼容旧数据）
+    if (!user) {
+      const { data: userById } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single()
+      user = userById
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: '用户不存在，请刷新页面重试' },
+        { status: 404 }
+      )
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .insert([
         {
           content: content.trim(),
-          user_id: userId,
+          user_id: user.id, // 使用正确的 UUID
           user_type: userType,
         }
       ])

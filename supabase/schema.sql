@@ -28,17 +28,9 @@ create index if not exists idx_messages_user_id on messages(user_id);
 alter table messages enable row level security;
 alter table users enable row level security;
 
-drop policy if exists "Messages are viewable by everyone" on messages;
-create policy "Messages are viewable by everyone" on messages
-  for select using (true);
-
-drop policy if exists "Anyone can insert messages" on messages;
-create policy "Anyone can insert messages" on messages
-  for insert with check (true);
-
-drop policy if exists "Users can manage own data" on users;
-create policy "Users can manage own data" on users
-  for all using (true);
+-- 允许所有操作（因为是匿名聊天室，且鉴权在 API 层处理）
+create policy "Allow all access to messages" on messages for all using (true) with check (true);
+create policy "Allow all access to users" on users for all using (true) with check (true);
 
 -- Enable realtime for tables (requires dashboard toggle)
 -- In Supabase Dashboard: Database -> Replication -> Realtime, enable for public.messages and public.users
