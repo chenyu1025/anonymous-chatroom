@@ -156,7 +156,16 @@ export default function ChatRoom() {
             }
           }
 
-          setMessages((prev) => [...prev, newMessage])
+          setMessages((prev) => {
+            // 尝试在本地查找引用的消息
+            if (newMessage.reply_to_id && !newMessage.reply_to) {
+              const repliedMsg = prev.find(m => m.id === newMessage.reply_to_id)
+              if (repliedMsg) {
+                newMessage.reply_to = repliedMsg
+              }
+            }
+            return [...prev, newMessage]
+          })
         }
       )
       .on(
