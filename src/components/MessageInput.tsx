@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Send, Image as ImageIcon, Mic, Square, Loader2, Plus, X, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { AudioRecorder } from '@/lib/audio-recorder'
@@ -226,10 +227,10 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
           </div>
         )}
 
-        {/* 语音预览弹窗 */}
-        {recordedAudio && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+        {/* 语音预览弹窗 - 使用 Portal 渲染到 body 避免被父级容器(如 glass 效果)遮挡 */}
+        {recordedAudio && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4 animate-in fade-in zoom-in duration-200 shadow-2xl">
               <h3 className="text-lg font-medium text-center text-gray-800">发送语音消息？</h3>
 
               <div className="flex justify-center py-4">
@@ -252,7 +253,8 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         <div className="flex items-end space-x-3">

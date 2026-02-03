@@ -195,12 +195,19 @@ export default function ChatRoom() {
             // 2. 检查是否有匹配的乐观消息（由我发送、内容相同、最近创建、且是乐观状态）
             // 注意：这里我们放宽一点时间限制，或者主要依赖内容和用户匹配
             // 为了避免误伤，我们只替换最近的一条匹配的乐观消息
-            const optimisticMatchIndex = prev.findIndex(m =>
-              m.isOptimistic &&
-              m.user_id === newMessage.user_id &&
-              m.content === newMessage.content &&
-              m.type === newMessage.type
-            )
+            const optimisticMatchIndex = prev.findIndex(m => {
+              if (!m.isOptimistic || m.user_id !== newMessage.user_id || m.type !== newMessage.type) {
+                return false
+              }
+
+              // 对于图片和语音，主要通过 file_url 匹配，或者通过 content 匹配（如果 optimistic 设置了默认文本）
+              if (m.type === 'image' || m.type === 'audio') {
+                return m.file_url === newMessage.file_url || m.content === newMessage.content
+              }
+
+              // 对于文本消息，必须内容一致
+              return m.content === newMessage.content
+            })
 
             if (optimisticMatchIndex !== -1) {
               // 替换乐观消息为真实消息
@@ -269,7 +276,7 @@ export default function ChatRoom() {
 
       const optimisticMessage: Message = {
         id: tempId,
-        content: content,
+        content: content || (type === 'image' ? '[图片]' : type === 'audio' ? '[语音]' : content),
         type: type,
         file_url: fileUrl,
         user_id: currentUserUuid, // 使用 UUID
