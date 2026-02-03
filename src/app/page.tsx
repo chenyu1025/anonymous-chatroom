@@ -328,16 +328,16 @@ export default function ChatRoom() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">加载中...</div>
+      <div className="h-[100dvh] animate-gradient-soft flex items-center justify-center">
+        <div className="glass px-6 py-4 rounded-xl text-gray-700 font-medium shadow-sm">加载中...</div>
       </div>
     )
   }
 
   return (
-    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden">
       {/* 头部 */}
-      <header className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+      <header className="glass shadow-sm px-4 py-3 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h1 className="text-xl font-semibold text-gray-800">

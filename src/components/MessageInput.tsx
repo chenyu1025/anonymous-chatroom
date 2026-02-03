@@ -178,9 +178,9 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   }
 
   return (
-    <div className="bg-white border-t border-gray-200 relative pb-4 pt-2">
+    <div className="glass border-t-0 relative pb-4 pt-2">
       {replyingTo && (
-        <div className="flex items-center justify-between px-4 py-2 mx-4 mb-2 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between px-4 py-2 mx-4 mb-2 bg-white/50 backdrop-blur-sm rounded-lg border border-white/20">
           <div className="flex flex-col overflow-hidden mr-4">
             <span className="text-xs font-bold text-purple-600 mb-0.5">
               回复 {replyingTo.user_type === 'owner' ? '主人' : '匿名用户'}

@@ -51,20 +51,17 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
     if (userType === 'owner') {
       return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
     } else {
-      // 访客样式：根据对齐方向决定颜色
+      // 访客样式：玻璃拟态 (Glassmorphism)
       if (isRightAligned) {
-        // 右边（自己）：浅浅浅灰 (bg-gray-100/bg-gray-200)
+        // 右边（自己）：半透明，融入感更强
         if (isCurrentUser) {
-          // 使用 Tailwind 默认颜色，bg-gray-200 稍微深一点点，bg-gray-100 很浅
-          // 用户要求"浅浅浅灰"，bg-gray-100 可能太接近白色，这里尝试用 bg-[#f0f0f0] 自定义或者 bg-gray-100
-          // 用户原文：自己访客消息 bg-gray-150 -> Tailwind 没有 150，用 hex 模拟
-          return 'bg-[#e5e7eb] text-gray-800 shadow-sm border border-transparent' // bg-gray-200
+          return 'bg-white/40 backdrop-blur-md text-gray-800 shadow-sm border border-white/20'
         }
-        // 右边（其他访客）：白色
-        return 'bg-white text-gray-800 shadow-sm border border-gray-100'
+        // 右边（其他访客）：较不透明，突出显示
+        return 'bg-white/75 backdrop-blur-md text-gray-800 shadow-sm border border-white/40'
       }
-      // 左边（访客）：保持原样，浅灰色背景
-      return 'bg-gray-100 text-gray-800'
+      // 左边（访客）：半透明白色，带有磨砂感
+      return 'bg-white/60 backdrop-blur-md text-gray-800 border border-white/30'
     }
   }
 
