@@ -315,6 +315,10 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation() // 防止触发消息气泡的点击事件
     if (audioRef.current) {
+      // 强制确保非静音和音量最大，解决部分移动端/隐私模式下默认静音的问题
+      audioRef.current.muted = false
+      audioRef.current.volume = 1.0
+
       if (error) {
         // Retry loading if error
         audioRef.current.load()
@@ -438,7 +442,14 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <audio ref={audioRef} src={src} preload="auto" />
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="auto"
+        playsInline
+        // @ts-ignore - webkit-playsinline is not standard but needed for iOS
+        webkit-playsinline="true"
+      />
 
       {/* 播放/暂停按钮 */}
       <button
