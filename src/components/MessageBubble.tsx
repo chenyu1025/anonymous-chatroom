@@ -52,11 +52,16 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
       return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
     } else {
       // 访客样式：根据对齐方向决定颜色
-      // 右边（自己或其他访客）：深色背景白字
+      if (isRightAligned) {
+        // 右边（自己）：深灰色
+        if (isCurrentUser) {
+          return 'bg-gray-600 text-white'
+        }
+        // 右边（其他访客）：稍微淡一点的灰色，以示区分
+        return 'bg-gray-500 text-white'
+      }
       // 左边（访客）：浅色背景黑字
-      return isRightAligned
-        ? 'bg-gray-600 text-white'
-        : 'bg-gray-100 text-gray-800'
+      return 'bg-gray-100 text-gray-800'
     }
   }
 
