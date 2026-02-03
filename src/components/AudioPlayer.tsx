@@ -192,6 +192,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
     const handleCanPlay = () => setIsLoading(false)
     const handleWaiting = () => setIsLoading(true)
+    const handlePlay = () => setIsPlaying(true)
+    const handlePause = () => setIsPlaying(false)
     const handleEnded = () => setIsPlaying(false)
     const handleError = () => {
       setIsLoading(false)
@@ -203,6 +205,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     audio.addEventListener('durationchange', handleLoadedMetadata)
     audio.addEventListener('canplay', handleCanPlay)
     audio.addEventListener('waiting', handleWaiting)
+    audio.addEventListener('play', handlePlay)
+    audio.addEventListener('pause', handlePause)
     audio.addEventListener('playing', handleCanPlay)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('error', handleError)
@@ -218,6 +222,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       audio.removeEventListener('durationchange', handleLoadedMetadata)
       audio.removeEventListener('canplay', handleCanPlay)
       audio.removeEventListener('waiting', handleWaiting)
+      audio.removeEventListener('play', handlePlay)
+      audio.removeEventListener('pause', handlePause)
       audio.removeEventListener('playing', handleCanPlay)
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('error', handleError)
@@ -234,19 +240,23 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         setIsLoading(true)
         return
       }
-
-      if (isPlaying) {
-        audioRef.current.pause()
-      } else {
+      
+      if (audioRef.current.paused) {
+        // 如果是首次播放（readyState === 0），显式调用 load()
+        if (audioRef.current.readyState === 0) {
+          audioRef.current.load()
+        }
         const playPromise = audioRef.current.play()
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.error('Playback failed:', error)
-            setIsPlaying(false)
+            // 不需要手动 setIsPlaying(false)，因为 pause 事件会触发
           })
         }
+      } else {
+        audioRef.current.pause()
       }
-      setIsPlaying(!isPlaying)
+      // 移除手动 setIsPlaying，完全依赖事件驱动
     }
   }
 
