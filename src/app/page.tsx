@@ -328,8 +328,33 @@ export default function ChatRoom() {
 
   if (loading) {
     return (
-      <div className="h-[100dvh] animate-gradient-soft flex items-center justify-center">
-        <div className="glass px-6 py-4 rounded-xl text-gray-700 font-medium shadow-sm">加载中...</div>
+      <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden">
+        {/* 骨架屏头部 */}
+        <header className="glass shadow-sm px-4 py-3 z-10">
+          <div className="flex items-center space-x-3">
+            <div className="w-24 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-12 h-5 bg-gray-100 rounded-full animate-pulse"></div>
+          </div>
+        </header>
+
+        {/* 骨架屏消息列表 */}
+        <div className="flex-1 p-4 space-y-6 overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+              <div className={`
+                relative max-w-[70%] h-16 rounded-2xl overflow-hidden
+                ${i % 2 === 0 ? 'bg-white/40' : 'bg-white/60'}
+              `}>
+                <div className="absolute inset-0 animate-shimmer"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 骨架屏输入框 */}
+        <div className="p-4 glass border-t-0">
+          <div className="w-full h-12 bg-white/50 rounded-full animate-pulse"></div>
+        </div>
       </div>
     )
   }
@@ -344,7 +369,10 @@ export default function ChatRoom() {
               {userType === 'owner' ? '我的聊天室' : '匿名聊天室'}
             </h1>
             {userType === 'owner' && (
-              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 pulse-ring relative">
+                  <span className="absolute inset-0 rounded-full bg-purple-500 animate-ping opacity-75"></span>
+                </span>
                 主人
               </span>
             )}
