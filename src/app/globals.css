@@ -10,22 +10,28 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-/* 自定义滚动条样式 */
+/* 优化滚动条样式 - 玻璃质感 */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  /* 增加透明边框来实现"悬浮"感 */
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(0, 0, 0, 0.2);
+  background-clip: content-box;
 }
 
 /* 更有机的消息滑入动画 (Organic Slide-In) */

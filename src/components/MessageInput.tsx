@@ -303,21 +303,21 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
               )}
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex-1 flex space-x-3 min-w-0">
+            <form onSubmit={handleSubmit} className="flex-1 flex space-x-3 min-w-0 group/input">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="匿名提问..."
                 disabled={disabled || sending}
-                className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all disabled:opacity-50 text-[16px] sm:text-sm"
+                className="flex-1 min-w-0 px-5 py-3 border border-gray-200 bg-white/50 backdrop-blur-sm rounded-full focus:ring-4 focus:ring-purple-100 focus:border-purple-400 outline-none transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-50 text-[16px] sm:text-sm"
               />
               <button
                 type="submit"
                 disabled={!message.trim() || sending || disabled}
-                className="bg-purple-600 text-white p-3 rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                className={`bg-purple-600 text-white p-3 rounded-full shadow-md hover:shadow-lg hover:bg-purple-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 flex-shrink-0 ${message.trim() ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-80'}`}
               >
-                <Send size={20} />
+                <Send size={20} className={sending ? 'animate-pulse' : ''} />
               </button>
             </form>
           )}
