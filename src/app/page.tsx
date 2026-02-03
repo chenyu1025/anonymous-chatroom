@@ -21,6 +21,11 @@ export default function ChatRoom() {
   const [userType, setUserType] = useState<'owner' | 'guest'>('guest')
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
+
+  // 使用 ref 来追踪最新状态，以便在闭包中使用
+  const currentThemeIdRef = useRef(DEFAULT_THEME_ID)
+  const currentUserUuidRef = useRef('')
+
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -44,6 +49,7 @@ export default function ChatRoom() {
     const savedThemeId = localStorage.getItem('chatroom_theme_id')
     if (savedThemeId) {
       setCurrentThemeId(savedThemeId)
+      currentThemeIdRef.current = savedThemeId
     }
 
     // 上报在线状态
@@ -54,10 +60,16 @@ export default function ChatRoom() {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.user && data.user.theme_id) {
-          setCurrentThemeId(data.user.theme_id)
-          // 同步到本地存储，确保多端同步
-          localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+        if (data.user) {
+          setCurrentUserUuid(data.user.id)
+          currentUserUuidRef.current = data.user.id
+
+          if (data.user.theme_id) {
+            setCurrentThemeId(data.user.theme_id)
+            currentThemeIdRef.current = data.user.theme_id
+            // 同步到本地存储，确保多端同步
+            localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+          }
         }
       })
       .catch(console.error)
@@ -66,6 +78,7 @@ export default function ChatRoom() {
   // 切换主题
   const handleThemeChange = async (themeId: string) => {
     setCurrentThemeId(themeId)
+    currentThemeIdRef.current = themeId
     localStorage.setItem('chatroom_theme_id', themeId)
     setShowThemeSelector(false)
 
@@ -82,16 +95,16 @@ export default function ChatRoom() {
 
     // 2. 更新本地消息显示（针对所有该用户的历史消息）
     setMessages(prev => prev.map(msg => {
-      // 优先使用 UUID 匹配（适用于所有消息），降级使用 session_id 匹配（适用于带有 users 关联信息的消息）
-      const isMyMessage = currentUserUuid
-        ? msg.user_id === currentUserUuid
+      // 优先使用 UUID 匹配（适用于所有消息），降级使用 session_id 匹配
+      const isMyMessage = currentUserUuidRef.current
+        ? msg.user_id === currentUserUuidRef.current
         : msg.users?.session_id === currentUserId || msg.user_id === currentUserId
 
       if (isMyMessage) {
         return {
           ...msg,
           users: {
-            ...(msg.users || { session_id: currentUserId }), // 如果 users 不存在，补全 session_id
+            ...(msg.users || { session_id: currentUserId }),
             theme_id: themeId
           }
         }
@@ -135,10 +148,10 @@ export default function ChatRoom() {
           const newMessage = payload.new as Message
 
           // 如果是自己发的消息，注入当前主题和 session_id
-          if (currentUserUuid && newMessage.user_id === currentUserUuid) {
+          if (currentUserUuidRef.current && newMessage.user_id === currentUserUuidRef.current) {
             newMessage.users = {
               session_id: currentUserId,
-              theme_id: currentThemeId
+              theme_id: currentThemeIdRef.current
             }
           }
 

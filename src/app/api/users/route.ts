@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         last_seen: new Date().toISOString(),
       }
       
-      if (themeId && existingUser.user_type === 'owner') {
+      if (themeId) {
         updates.theme_id = themeId
       }
 
