@@ -175,11 +175,15 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
     const handleTimeUpdate = () => {
       if (!isDragging) {
-        setCurrentTime(audio.currentTime)
+        const time = audio.currentTime
+        setCurrentTime(Number.isFinite(time) ? time : 0)
       }
     }
 
-    const handleLoadedMetadata = () => setDuration(audio.duration)
+    const handleLoadedMetadata = () => {
+      const d = audio.duration
+      setDuration(Number.isFinite(d) ? d : 0)
+    }
     const handleEnded = () => setIsPlaying(false)
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
