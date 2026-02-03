@@ -13,6 +13,7 @@ import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID } from '@/lib/themes'
 import BackgroundParticles from '@/components/BackgroundParticles'
 import ClickSparkles from '@/components/ClickSparkles'
+import FluidCursorTrail from '@/components/FluidCursorTrail'
 import { soundManager } from '@/lib/sound'
 
 export default function ChatRoom() {
@@ -181,9 +182,9 @@ export default function ChatRoom() {
             // 2. 检查是否有匹配的乐观消息（由我发送、内容相同、最近创建、且是乐观状态）
             // 注意：这里我们放宽一点时间限制，或者主要依赖内容和用户匹配
             // 为了避免误伤，我们只替换最近的一条匹配的乐观消息
-            const optimisticMatchIndex = prev.findIndex(m => 
-              m.isOptimistic && 
-              m.user_id === newMessage.user_id && 
+            const optimisticMatchIndex = prev.findIndex(m =>
+              m.isOptimistic &&
+              m.user_id === newMessage.user_id &&
               m.content === newMessage.content &&
               m.type === newMessage.type
             )
@@ -439,6 +440,7 @@ export default function ChatRoom() {
     <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden relative">
       <BackgroundParticles />
       <ClickSparkles />
+      <FluidCursorTrail />
       {/* 头部 */}
       <header className="glass shadow-sm px-4 py-3 z-10 relative">
         <div className="flex items-center justify-between">

@@ -1,9 +1,39 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function BackgroundParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [gradientColors, setGradientColors] = useState(['#e0c3fc', '#8ec5fc'])
+
+  // 根据时间计算渐变色
+  useEffect(() => {
+    const updateGradient = () => {
+      const hour = new Date().getHours()
+      
+      // 0-5: 深夜/凌晨 (深紫 - 深蓝)
+      if (hour >= 0 && hour < 6) {
+        setGradientColors(['#2d1b4e', '#1a2a6c'])
+      }
+      // 6-11: 早晨 (浅粉 - 浅蓝)
+      else if (hour >= 6 && hour < 12) {
+        setGradientColors(['#ffd1ff', '#fad0c4'])
+      }
+      // 12-17: 下午 (明亮蓝 - 暖橙)
+      else if (hour >= 12 && hour < 18) {
+        setGradientColors(['#89f7fe', '#66a6ff'])
+      }
+      // 18-23: 傍晚/晚上 (紫红 - 深靛蓝)
+      else {
+        setGradientColors(['#a18cd1', '#fbc2eb'])
+      }
+    }
+
+    updateGradient()
+    // 每分钟检查一次时间
+    const interval = setInterval(updateGradient, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -102,9 +132,17 @@ export default function BackgroundParticles() {
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 z-0 pointer-events-none opacity-60"
-    />
+    <>
+      <div 
+        className="fixed inset-0 z-[-1] transition-colors duration-[5000ms] ease-in-out"
+        style={{
+          background: `linear-gradient(135deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 100%)`
+        }}
+      />
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 z-0 pointer-events-none opacity-60"
+      />
+    </>
   )
 }
