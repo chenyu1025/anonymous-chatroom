@@ -24,22 +24,6 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
   const themeId = message.users?.theme_id || 'sprigatito'
   const theme = OWNER_THEMES.find(t => t.id === themeId) || OWNER_THEMES[0]
 
-  const getBubbleStyles = () => {
-    // 只有 owner 可以应用主题样式
-    if (userType === 'owner' && themeId && themeId !== 'default') {
-      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
-    }
-
-    // 默认样式回退
-    if (userType === 'owner') {
-      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
-    } else {
-      return isCurrentUser
-        ? 'bg-gray-600 text-white'
-        : 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getContainerStyles = () => {
     // 1. 如果当前查看者是主人
     if (viewerType === 'owner') {
@@ -56,6 +40,25 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
 
   // 是否右对齐
   const isRightAligned = getContainerStyles() === 'justify-end'
+
+  const getBubbleStyles = () => {
+    // 只有 owner 可以应用主题样式
+    if (userType === 'owner' && themeId && themeId !== 'default') {
+      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
+    }
+
+    // 默认样式回退
+    if (userType === 'owner') {
+      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
+    } else {
+      // 访客样式：根据对齐方向决定颜色
+      // 右边（自己或其他访客）：深色背景白字
+      // 左边（访客）：浅色背景黑字
+      return isRightAligned
+        ? 'bg-gray-600 text-white'
+        : 'bg-gray-100 text-gray-800'
+    }
+  }
 
   return (
     <div className={`flex ${getContainerStyles()} mb-4 message-animate items-end`}>
