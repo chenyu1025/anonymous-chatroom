@@ -191,12 +191,13 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   const uploadVoice = async (blob: Blob) => {
     setUploading(true)
     try {
-      // 使用 .wav 扩展名
-      const fileName = `${Date.now()}.wav`
+      // 根据 blob.type 决定扩展名
+      const ext = blob.type.includes('webm') ? 'webm' : blob.type.includes('mp4') ? 'm4a' : 'wav'
+      const fileName = `${Date.now()}.${ext}`
       const { data, error } = await supabase.storage
         .from('voices')
         .upload(fileName, blob, {
-          contentType: 'audio/wav'
+          contentType: blob.type || 'audio/webm'
         })
 
       if (error) throw error

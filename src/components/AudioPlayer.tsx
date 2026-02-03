@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Play, Pause } from 'lucide-react'
+import { Play, Pause, Loader2 } from 'lucide-react'
 
 interface AudioPlayerProps {
   src: string
@@ -165,6 +165,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const [duration, setDuration] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // 默认显示加载中
+  const [error, setError] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
@@ -182,30 +184,67 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
     const handleLoadedMetadata = () => {
       const d = audio.duration
-      setDuration(Number.isFinite(d) ? d : 0)
+      if (Number.isFinite(d)) {
+        setDuration(d)
+        setIsLoading(false)
+      }
     }
+
+    const handleCanPlay = () => setIsLoading(false)
+    const handleWaiting = () => setIsLoading(true)
     const handleEnded = () => setIsPlaying(false)
+    const handleError = () => {
+      setIsLoading(false)
+      setError(true)
+    }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('durationchange', handleLoadedMetadata)
+    audio.addEventListener('canplay', handleCanPlay)
+    audio.addEventListener('waiting', handleWaiting)
+    audio.addEventListener('playing', handleCanPlay)
     audio.addEventListener('ended', handleEnded)
+    audio.addEventListener('error', handleError)
+
+    // Check if metadata is already loaded
+    if (audio.readyState >= 1) {
+      handleLoadedMetadata()
+    }
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('durationchange', handleLoadedMetadata)
+      audio.removeEventListener('canplay', handleCanPlay)
+      audio.removeEventListener('waiting', handleWaiting)
+      audio.removeEventListener('playing', handleCanPlay)
       audio.removeEventListener('ended', handleEnded)
+      audio.removeEventListener('error', handleError)
     }
   }, [isDragging])
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation() // 防止触发消息气泡的点击事件
     if (audioRef.current) {
+      if (error) {
+        // Retry loading if error
+        audioRef.current.load()
+        setError(false)
+        setIsLoading(true)
+        return
+      }
+
       if (isPlaying) {
         audioRef.current.pause()
       } else {
-        audioRef.current.play()
+        const playPromise = audioRef.current.play()
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error('Playback failed:', error)
+            setIsPlaying(false)
+          })
+        }
       }
       setIsPlaying(!isPlaying)
     }
@@ -293,11 +332,15 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       {/* 播放/暂停按钮 */}
       <button
         onClick={togglePlay}
+        disabled={isLoading && !isPlaying} // Only disable if loading initial metadata
         className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95
           bg-white text-gray-800 hover:bg-gray-50 shadow-sm p-1.5
+          disabled:opacity-70 disabled:cursor-not-allowed
         `}
       >
-        {isPlaying ? (
+        {isLoading && duration === 0 ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : isPlaying ? (
           <ArtisticPause />
         ) : (
           <ArtisticPlay />
@@ -309,12 +352,12 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         {/* 时间显示 - 悬浮或拖动或播放时显示在上方 */}
         <div className={`absolute -top-4 left-0 w-full flex justify-between text-[9px] font-medium transition-opacity duration-200 ${isHovering || isDragging || isPlaying ? 'opacity-100' : 'opacity-0'}`}>
           <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(duration)}</span>
+          <span>{duration ? formatTime(duration) : '--:--'}</span>
         </div>
 
         {/* 进度条轨道 - 增加点击热区 */}
         <div
-          className="h-8 -my-2 flex items-center cursor-pointer group/bar relative"
+          className={`h-8 -my-2 flex items-center cursor-pointer group/bar relative ${isLoading && duration === 0 ? 'pointer-events-none opacity-50' : ''}`}
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
         >
