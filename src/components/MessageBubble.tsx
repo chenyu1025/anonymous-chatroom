@@ -83,7 +83,7 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
         </div>
       )}
       <div
-        className={`max-w-[70%] px-4 py-2 rounded-2xl relative ${getBubbleStyles()} group`}
+        className={`max-w-[70%] px-4 py-2 rounded-2xl relative ${getBubbleStyles()} group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md`}
         onDoubleClick={() => onReply(message)}
         onContextMenu={(e) => {
           e.preventDefault()
