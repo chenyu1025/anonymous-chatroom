@@ -43,8 +43,8 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
   const getContainerStyles = () => {
     // 1. 如果当前查看者是主人
     if (viewerType === 'owner') {
-      // 主人自己发的在右边，访客发的在左边
-      return isCurrentUser ? 'justify-end' : 'justify-start'
+      // 只要是主人发的消息，都在右边（不管是不是当前Session）；访客发的在左边
+      return userType === 'owner' ? 'justify-end' : 'justify-start'
     }
 
     // 2. 如果当前查看者是访客
