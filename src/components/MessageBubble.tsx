@@ -40,14 +40,14 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
   }
 
   const getContainerStyles = () => {
-    // 主人在左边，访客（匿名）在右边
-    return userType === 'owner' ? 'justify-start' : 'justify-end'
+    // 无论是主人还是访客，自己的消息在右边，别人的消息在左边
+    return isCurrentUser ? 'justify-end' : 'justify-start'
   }
 
   return (
     <div className={`flex ${getContainerStyles()} mb-4 message-animate items-end`}>
-      {/* 只有 owner 显示头像 */}
-      {userType === 'owner' && theme.avatar && (
+      {/* 只有 owner 显示头像，且只在别人看 owner 时显示（左侧） */}
+      {userType === 'owner' && !isCurrentUser && theme.avatar && (
         <div className={`relative w-10 h-10 mr-2 rounded-full overflow-hidden border-2 shadow-md bg-white shrink-0 ${theme.borderClass}`}>
           <Image
             src={theme.avatar}
@@ -86,8 +86,7 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
               e.stopPropagation()
               onReply(message)
             }}
-            className={`absolute bottom-0 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
-              ${userType === 'owner' ? '-right-8' : '-left-8'}
+            className={`absolute bottom-0 -right-8 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
               opacity-100 md:opacity-0 md:group-hover:opacity-100`}
             title="引用回复"
           >
@@ -98,8 +97,9 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
         {/* 小箭头：只有 owner 且使用了主题样式时显示 */}
         {userType === 'owner' && ((themeId && themeId !== 'default') || userType === 'owner') ? (
           <div
-            className="absolute -left-2 top-4 w-0 h-0 border-t-[8px] border-t-transparent border-r-[10px] border-b-[8px] border-b-transparent"
-            style={{ borderRightColor: theme.arrowColor }}
+            className={`absolute top-4 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent
+              ${isCurrentUser ? '-right-2 border-l-[10px]' : '-left-2 border-r-[10px]'}`}
+            style={isCurrentUser ? { borderLeftColor: theme.arrowColor } : { borderRightColor: theme.arrowColor }}
           />
         ) : null}
         {message.type === 'image' && message.file_url ? (
