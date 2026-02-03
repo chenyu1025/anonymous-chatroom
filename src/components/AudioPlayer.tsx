@@ -166,6 +166,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const [isDragging, setIsDragging] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
   const [isLoading, setIsLoading] = useState(false) // 默认不显示加载中，防止移动端无限加载
+  const [isReady, setIsReady] = useState(false) // 追踪音频是否已准备好播放
   const [error, setError] = useState(false)
 
   // 使用 ref 来追踪用户的播放意图
@@ -191,6 +192,9 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       const d = audio.duration
       if (Number.isFinite(d)) {
         setDuration(d)
+        // Check readyState here too
+        if (audio.readyState >= 3) setIsReady(true)
+
         // 如果我们有播放意图，加载元数据后不要取消 loading
         // 而是等待 canplay 事件来决定是否取消
         if (!playIntentRef.current) {
@@ -200,6 +204,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     }
 
     const handleCanPlay = () => {
+      setIsReady(true)
+
       // 如果用户想要播放，并且当前是暂停状态，尝试播放
       if (playIntentRef.current && audio.paused) {
         const playPromise = audio.play()
@@ -247,6 +253,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       setIsLoading(false)
       setError(true)
       playIntentRef.current = false
+      setIsReady(false)
     }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
@@ -263,6 +270,10 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     // Check if metadata is already loaded
     if (audio.readyState >= 1) {
       handleLoadedMetadata()
+    }
+    // Check if ready to play
+    if (audio.readyState >= 3) {
+      setIsReady(true)
     }
 
     return () => {
@@ -287,7 +298,17 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         audioRef.current.load()
         setError(false)
         setIsLoading(true)
-        playIntentRef.current = true // 设置播放意图
+        // 这里不设置 playIntent，因为我们想要用户在加载完成后再次点击播放
+        // playIntentRef.current = true 
+        return
+      }
+
+      // 如果还没有准备好播放 (readyState < 3)，我们只触发加载，不播放
+      if (!isReady && audioRef.current.paused) {
+        setIsLoading(true)
+        audioRef.current.load()
+        // 不设置 playIntent，确保加载完成后不会自动播放
+        playIntentRef.current = false
         return
       }
 
@@ -404,6 +425,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         // 移除 disabled 状态，允许用户点击播放来触发加载
         className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95
           bg-white text-gray-800 hover:bg-gray-50 shadow-sm p-1.5
+          ${!isReady && !isLoading ? 'opacity-60' : ''}
         `}
       >
         {isLoading ? (
