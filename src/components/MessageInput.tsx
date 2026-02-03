@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Send, Image as ImageIcon, Mic, Square, Loader2, Plus, X, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { AudioRecorder } from '@/lib/audio-recorder'
 
 interface MessageInputProps {
   onSendMessage: (content: string, type?: 'text' | 'image' | 'audio', fileUrl?: string) => void
@@ -18,8 +19,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
   const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; url: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const audioRecorderRef = useRef<AudioRecorder | null>(null)
   const startYRef = useRef(0)
   const shouldCancelRef = useRef(false)
   const [isCanceling, setIsCanceling] = useState(false)
@@ -78,31 +78,10 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
     setIsCanceling(false)
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
-      mediaRecorderRef.current = mediaRecorder
-      chunksRef.current = []
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
-      }
-
-      mediaRecorder.onstop = async () => {
-        const tracks = stream.getTracks()
-        tracks.forEach(track => track.stop())
-
-        if (shouldCancelRef.current) {
-          console.log('Recording cancelled')
-          return
-        }
-
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        const url = URL.createObjectURL(blob)
-        setRecordedAudio({ blob, url })
-        setIsRecording(false)
-      }
-
-      mediaRecorder.start()
+      // 初始化录音器
+      const recorder = new AudioRecorder()
+      audioRecorderRef.current = recorder
+      await recorder.start()
       setIsRecording(true)
     } catch (error) {
       console.error('Error accessing microphone:', error)
@@ -110,11 +89,18 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
     }
   }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
+  const stopRecording = async () => {
+    if (audioRecorderRef.current && isRecording) {
+      const result = await audioRecorderRef.current.stop()
       setIsRecording(false)
       setIsCanceling(false)
+
+      if (shouldCancelRef.current) {
+        console.log('Recording cancelled')
+        return
+      }
+
+      setRecordedAudio(result)
     }
   }
 
@@ -157,7 +143,8 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
   const uploadVoice = async (blob: Blob) => {
     setUploading(true)
     try {
-      const fileName = `${Date.now()}.webm`
+      // 使用 .wav 扩展名
+      const fileName = `${Date.now()}.wav`
       const { data, error } = await supabase.storage
         .from('voices')
         .upload(fileName, blob)
