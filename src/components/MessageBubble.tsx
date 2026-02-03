@@ -7,11 +7,12 @@ import { OWNER_THEMES } from '@/lib/themes'
 interface MessageBubbleProps {
   message: Message
   isCurrentUser: boolean
-  userType: 'owner' | 'guest'
+  userType: 'owner' | 'guest' // 消息发送者的类型
+  viewerType: 'owner' | 'guest' // 当前查看者的类型
   onReply: (message: Message) => void
 }
 
-export default function MessageBubble({ message, isCurrentUser, userType, onReply }: MessageBubbleProps) {
+export default function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('zh-CN', {
       hour: '2-digit',
@@ -40,14 +41,30 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
   }
 
   const getContainerStyles = () => {
-    // 无论是主人还是访客，自己的消息在右边，别人的消息在左边
-    return isCurrentUser ? 'justify-end' : 'justify-start'
+    // 1. 如果当前查看者是主人
+    if (viewerType === 'owner') {
+      // 主人自己发的在右边，访客发的在左边
+      return isCurrentUser ? 'justify-end' : 'justify-start'
+    }
+
+    // 2. 如果当前查看者是访客
+    // 主人发的在左边
+    if (userType === 'owner') return 'justify-start'
+    // 访客自己发的、或者其他访客发的，都在右边
+    return 'justify-end'
   }
+
+  // 是否右对齐
+  const isRightAligned = getContainerStyles() === 'justify-end'
 
   return (
     <div className={`flex ${getContainerStyles()} mb-4 message-animate items-end`}>
-      {/* 只有 owner 显示头像，别人看 owner 显示在左侧 */}
-      {userType === 'owner' && !isCurrentUser && theme.avatar && (
+      {/* 头像显示逻辑：
+          1. 只有 owner 才有头像
+          2. 如果 owner 消息在左边，头像显示在气泡左侧
+          3. 如果 owner 消息在右边，头像不显示（或者显示在右侧，看需求，这里先只处理左侧）
+      */}
+      {userType === 'owner' && !isRightAligned && theme.avatar && (
         <div className={`relative w-10 h-10 mr-2 rounded-full overflow-hidden border-2 shadow-md bg-white shrink-0 ${theme.borderClass}`}>
           <Image
             src={theme.avatar}
@@ -80,13 +97,15 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
         )}
 
         {/* 引用按钮 - 移动端常驻，桌面端悬浮显示 */}
+        {/* 如果当前是右对齐（自己的消息或访客视角下的其他访客消息），按钮在左边；否则在右边 */}
         {!isCurrentUser && (
           <button
             onClick={(e) => {
               e.stopPropagation()
               onReply(message)
             }}
-            className={`absolute bottom-0 -right-8 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
+            className={`absolute bottom-0 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
+              ${isRightAligned ? '-left-8' : '-right-8'}
               opacity-100 md:opacity-0 md:group-hover:opacity-100`}
             title="引用回复"
           >
@@ -98,8 +117,8 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
         {userType === 'owner' && ((themeId && themeId !== 'default') || userType === 'owner') ? (
           <div
             className={`absolute top-4 w-0 h-0 border-t-[8px] border-t-transparent border-b-[8px] border-b-transparent
-              ${isCurrentUser ? '-right-2 border-l-[10px]' : '-left-2 border-r-[10px]'}`}
-            style={isCurrentUser ? { borderLeftColor: theme.arrowColor } : { borderRightColor: theme.arrowColor }}
+              ${isRightAligned ? '-right-2 border-l-[10px]' : '-left-2 border-r-[10px]'}`}
+            style={isRightAligned ? { borderLeftColor: theme.arrowColor } : { borderRightColor: theme.arrowColor }}
           />
         ) : null}
 
@@ -127,8 +146,8 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
         </p>
       </div>
 
-      {/* 只有 owner 显示头像，自己看 owner 显示在右侧 */}
-      {userType === 'owner' && isCurrentUser && theme.avatar && (
+      {/* 只有 owner 显示头像，自己看 owner 显示在右侧（如果 owner 消息在右侧） */}
+      {userType === 'owner' && isRightAligned && theme.avatar && (
         <div className={`relative w-10 h-10 ml-2 rounded-full overflow-hidden border-2 shadow-md bg-white shrink-0 ${theme.borderClass}`}>
           <Image
             src={theme.avatar}

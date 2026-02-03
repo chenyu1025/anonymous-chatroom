@@ -443,6 +443,7 @@ export default function ChatRoom() {
                 message={message}
                 isCurrentUser={message.user_id === currentUserUuidRef.current || (!!message.users?.session_id && message.users.session_id === currentUserId)}
                 userType={message.user_type}
+                viewerType={userType}
                 onReply={setReplyingTo}
               />
             ))}
