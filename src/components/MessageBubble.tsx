@@ -46,7 +46,7 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
 
   return (
     <div className={`flex ${getContainerStyles()} mb-4 message-animate items-end`}>
-      {/* 只有 owner 显示头像，且只在别人看 owner 时显示（左侧） */}
+      {/* 只有 owner 显示头像，别人看 owner 显示在左侧 */}
       {userType === 'owner' && !isCurrentUser && theme.avatar && (
         <div className={`relative w-10 h-10 mr-2 rounded-full overflow-hidden border-2 shadow-md bg-white shrink-0 ${theme.borderClass}`}>
           <Image
@@ -102,6 +102,8 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
             style={isCurrentUser ? { borderLeftColor: theme.arrowColor } : { borderRightColor: theme.arrowColor }}
           />
         ) : null}
+
+        {/* 消息内容：图片/语音/文本 */}
         {message.type === 'image' && message.file_url ? (
           <div className="relative w-48 h-48 mb-1 rounded-lg overflow-hidden">
             <Image
@@ -119,10 +121,23 @@ export default function MessageBubble({ message, isCurrentUser, userType, onRepl
         ) : (
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
         )}
+
         <p className={`text-xs mt-1 ${userType === 'owner' ? 'opacity-70' : (isCurrentUser ? 'text-gray-300' : 'text-gray-500')}`}>
           {formatTime(message.created_at)}
         </p>
       </div>
+
+      {/* 只有 owner 显示头像，自己看 owner 显示在右侧 */}
+      {userType === 'owner' && isCurrentUser && theme.avatar && (
+        <div className={`relative w-10 h-10 ml-2 rounded-full overflow-hidden border-2 shadow-md bg-white shrink-0 ${theme.borderClass}`}>
+          <Image
+            src={theme.avatar}
+            alt={theme.name}
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
     </div>
   )
 }
