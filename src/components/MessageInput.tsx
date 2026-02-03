@@ -265,7 +265,7 @@ export default function MessageInput({ onSendMessage, disabled, userType }: Mess
                 {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
                 <span>
                   {isRecording
-                    ? (isCanceling ? '松开取消' : '松开发送')
+                    ? (isCanceling ? '松开取消' : '松开预览')
                     : '按住说话'}
                 </span>
               </button>
