@@ -124,7 +124,12 @@ export default function ChatRoom() {
         const res = await fetch('/api/messages?limit=50')
         const data = await res.json()
         if (data.messages) {
-          setMessages(data.messages.reverse()) // 翻转以按时间正序显示
+          // 处理回复消息可能是数组的情况
+          const formattedMessages = data.messages.map((msg: any) => ({
+            ...msg,
+            reply_to: Array.isArray(msg.reply_to) ? msg.reply_to[0] : msg.reply_to
+          }))
+          setMessages(formattedMessages.reverse()) // 翻转以按时间正序显示
           if (data.messages.length < 50) {
             setHasMore(false)
           }
@@ -258,7 +263,11 @@ export default function ChatRoom() {
       console.log('Loaded messages:', data.messages?.length)
 
       if (data.messages && data.messages.length > 0) {
-        const newMessages = data.messages.reverse()
+        // 处理回复消息可能是数组的情况
+        const newMessages = data.messages.reverse().map((msg: any) => ({
+          ...msg,
+          reply_to: Array.isArray(msg.reply_to) ? msg.reply_to[0] : msg.reply_to
+        }))
         setMessages(prev => {
           // 过滤掉已存在的重复消息，避免 key 冲突
           const existingIds = new Set(prev.map(m => m.id))
@@ -432,7 +441,7 @@ export default function ChatRoom() {
               <MessageBubble
                 key={message.id}
                 message={message}
-                isCurrentUser={message.user_id === currentUserId}
+                isCurrentUser={message.user_id === currentUserUuidRef.current || (!!message.users?.session_id && message.users.session_id === currentUserId)}
                 userType={message.user_type}
                 onReply={setReplyingTo}
               />
