@@ -235,72 +235,64 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
         )}
 
         <div className="flex items-end space-x-3">
-          {/* 只有 owner 可以打开工具栏（发送图片/语音） */}
-          {userType === 'owner' && (
-            <button
-              onClick={() => setShowTools(!showTools)}
-              className={`p-3 rounded-full transition-colors flex-shrink-0 ${showTools ? 'bg-gray-200' : 'bg-gray-100 text-gray-600'}`}
-              type="button"
-            >
-              {showTools ? <X size={20} /> : <Plus size={20} />}
-            </button>
-          )}
+          {/* 所有用户都可以打开工具栏（发送图片/语音） */}
+          <button
+            onClick={() => setShowTools(!showTools)}
+            className={`p-3 rounded-full transition-colors flex-shrink-0 ${showTools ? 'bg-gray-200' : 'bg-gray-100 text-gray-600'}`}
+            type="button"
+          >
+            {showTools ? <X size={20} /> : <Plus size={20} />}
+          </button>
 
           {showTools ? (
             <div className="flex-1 flex space-x-4 animate-in fade-in slide-in-from-left-5 duration-200 overflow-hidden">
-              {userType === 'owner' && (
-                <>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 bg-blue-50 text-blue-600 p-3 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-100 transition-colors whitespace-nowrap"
-                    type="button"
-                  >
-                    <ImageIcon size={20} />
-                    <span>图片</span>
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                </>
-              )}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 bg-blue-50 text-blue-600 p-3 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                type="button"
+              >
+                <ImageIcon size={20} />
+                <span>图片</span>
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
 
-              {userType === 'owner' && (
-                <button
-                  onMouseDown={startRecording}
-                  onMouseUp={stopRecording}
-                  onMouseLeave={handleMouseLeave}
-                  onTouchStart={(e) => {
-                    // 防止页面滚动和长按菜单
-                    e.preventDefault();
-                    startRecording(e);
-                  }}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    stopRecording();
-                  }}
-                  onTouchMove={(e) => {
-                    e.preventDefault();
-                    handleTouchMove(e);
-                  }}
-                  className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap select-none touch-none ${isRecording
-                    ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
-                    : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                    }`}
-                  type="button"
-                  style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
-                >
-                  {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
-                  <span>
-                    {isRecording
-                      ? (isCanceling ? '松开取消' : '松开预览')
-                      : '按住说话'}
-                  </span>
-                </button>
-              )}
+              <button
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={(e) => {
+                  // 防止页面滚动和长按菜单
+                  e.preventDefault();
+                  startRecording(e);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  stopRecording();
+                }}
+                onTouchMove={(e) => {
+                  e.preventDefault();
+                  handleTouchMove(e);
+                }}
+                className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap select-none touch-none ${isRecording
+                  ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
+                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                  }`}
+                type="button"
+                style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+              >
+                {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
+                <span>
+                  {isRecording
+                    ? (isCanceling ? '松开取消' : '松开预览')
+                    : '按住说话'}
+                </span>
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex-1 flex space-x-3 min-w-0 group/input">

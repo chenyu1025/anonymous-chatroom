@@ -13,6 +13,7 @@ interface MessageBubbleProps {
 }
 
 import { useState } from 'react'
+import AudioPlayer from './AudioPlayer'
 
 export default function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
   const [isZoomed, setIsZoomed] = useState(false)
@@ -147,8 +148,8 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
               />
             </div>
           ) : message.type === 'audio' && message.file_url ? (
-            <div className="min-w-[200px] mb-1">
-              <audio controls src={message.file_url} className="w-full h-8" />
+            <div className="mb-1">
+              <AudioPlayer src={message.file_url} isOwner={userType === 'owner'} />
             </div>
           ) : (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
