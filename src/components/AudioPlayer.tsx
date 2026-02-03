@@ -303,15 +303,6 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         return
       }
 
-      // 如果还没有准备好播放 (readyState < 3)，我们只触发加载，不播放
-      if (!isReady && audioRef.current.paused) {
-        setIsLoading(true)
-        audioRef.current.load()
-        // 不设置 playIntent，确保加载完成后不会自动播放
-        playIntentRef.current = false
-        return
-      }
-
       if (audioRef.current.paused) {
         // 用户想要播放
         playIntentRef.current = true
@@ -422,10 +413,12 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       {/* 播放/暂停按钮 */}
       <button
         onClick={togglePlay}
+        disabled={isLoading}
         // 移除 disabled 状态，允许用户点击播放来触发加载
         className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95
           bg-white text-gray-800 hover:bg-gray-50 shadow-sm p-1.5
           ${!isReady && !isLoading ? 'opacity-60' : ''}
+          ${isLoading ? 'cursor-not-allowed opacity-80' : ''}
         `}
       >
         {isLoading ? (
