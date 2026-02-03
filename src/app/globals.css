@@ -20,25 +20,29 @@
   background: #a8a8a8;
 }
 
-/* 消息动画 */
-@keyframes popIn {
+/* 更有机的消息滑入动画 (Organic Slide-In) */
+@keyframes slideInUp {
   0% {
-    transform: scale(0.8) translateY(10px);
     opacity: 0;
+    transform: translateY(20px) scale(0.96);
   }
 
-  70% {
-    transform: scale(1.05) translateY(-2px);
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.01);
   }
 
   100% {
-    transform: scale(1) translateY(0);
     opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .message-animate {
-  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 使用自定义的贝塞尔曲线，模拟真实的物理弹跳感 */
+  animation: slideInUp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  /* 初始隐藏，防止闪烁 */
+  opacity: 0;
 }
 
 /* 响应式字体大小 */
@@ -85,7 +89,7 @@ button:active {
   /* 使用非常接近的浅灰色和淡蓝色，营造"隐隐约约"的流动感，不抢眼 */
   background: linear-gradient(-45deg, #f8fafc, #f1f5f9, #eef2ff, #f8fafc);
   background-size: 400% 400%;
-  animation: gradient 20s ease infinite;
+  animation: gradient 10s ease infinite;
 }
 
 /* 毛玻璃效果 */
