@@ -53,14 +53,14 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
     } else {
       // 访客样式：根据对齐方向决定颜色
       if (isRightAligned) {
-        // 右边（自己）：深灰色
+        // 右边（自己）：白色背景，黑色文字，带阴影
         if (isCurrentUser) {
-          return 'bg-gray-600 text-white'
+          return 'bg-white text-gray-800 shadow-sm border border-gray-100'
         }
-        // 右边（其他访客）：稍微淡一点的灰色，以示区分
-        return 'bg-gray-500 text-white'
+        // 右边（其他访客）：非常浅的灰色，黑色文字
+        return 'bg-gray-50 text-gray-800 shadow-sm border border-gray-100'
       }
-      // 左边（访客）：浅色背景黑字
+      // 左边（访客）：保持原样，浅灰色背景
       return 'bg-gray-100 text-gray-800'
     }
   }
