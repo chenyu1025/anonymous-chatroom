@@ -165,7 +165,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const [duration, setDuration] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // 默认显示加载中
+  const [isLoading, setIsLoading] = useState(false) // 默认不显示加载中，防止移动端无限加载
   const [error, setError] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -332,13 +332,12 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       {/* 播放/暂停按钮 */}
       <button
         onClick={togglePlay}
-        disabled={isLoading && !isPlaying} // Only disable if loading initial metadata
+        // 移除 disabled 状态，允许用户点击播放来触发加载
         className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95
           bg-white text-gray-800 hover:bg-gray-50 shadow-sm p-1.5
-          disabled:opacity-70 disabled:cursor-not-allowed
         `}
       >
-        {isLoading && duration === 0 ? (
+        {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : isPlaying ? (
           <ArtisticPause />
