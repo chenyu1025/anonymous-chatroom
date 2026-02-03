@@ -19,7 +19,13 @@ export class AudioRecorder {
         ? 'audio/webm;codecs=opus'
         : 'audio/mp4';
 
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      // Set lower bitrate for faster loading (32kbps)
+      const options: MediaRecorderOptions = {
+        mimeType,
+        audioBitsPerSecond: 32000
+      };
+
+      this.mediaRecorder = new MediaRecorder(stream, options);
 
       this.mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {

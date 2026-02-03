@@ -396,7 +396,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio ref={audioRef} src={src} preload="auto" />
 
       {/* 播放/暂停按钮 */}
       <button
