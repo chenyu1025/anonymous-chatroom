@@ -9,14 +9,37 @@ export class AudioRecorder {
   private recording: boolean = false;
   private sampleRate: number = 44100;
 
+  // 必须在用户交互（点击/触摸）时同步调用
+  initContext() {
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+  }
+
   async start(): Promise<void> {
     this.chunks = [];
-    this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // 如果没有初始化，尝试初始化（可能因为非用户交互而suspended）
+    if (!this.audioContext) {
+      this.initContext();
+    }
 
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    try {
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (error) {
+      console.error('getUserMedia error:', error);
+      throw new Error('无法访问麦克风，请检查权限设置');
+    }
+
+    if (!this.audioContext) throw new Error('AudioContext failed to initialize');
+
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
+    
     this.sampleRate = this.audioContext.sampleRate;
     this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
 

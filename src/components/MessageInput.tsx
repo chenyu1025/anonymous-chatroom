@@ -81,11 +81,15 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
       // 初始化录音器
       const recorder = new AudioRecorder()
       audioRecorderRef.current = recorder
+
+      // 立即初始化 AudioContext 以响应用户手势
+      recorder.initContext()
+
       await recorder.start()
       setIsRecording(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing microphone:', error)
-      alert('无法访问麦克风')
+      alert(error.message || '无法访问麦克风')
     }
   }
 
@@ -147,7 +151,9 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
       const fileName = `${Date.now()}.wav`
       const { data, error } = await supabase.storage
         .from('voices')
-        .upload(fileName, blob)
+        .upload(fileName, blob, {
+          contentType: 'audio/wav'
+        })
 
       if (error) throw error
 
