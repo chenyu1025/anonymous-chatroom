@@ -485,23 +485,26 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         >
           <div
             ref={progressBarRef}
-            className="w-full h-1 bg-black/10 rounded-full relative overflow-hidden"
+            className="w-full h-1 relative"
           >
-            {/* 缓冲进度 */}
-            <div
-              className={`absolute left-0 top-0 h-full bg-gray-300 transition-all duration-300`}
-              style={{ width: `${buffered}%` }}
-            />
+            {/* 轨道背景和进度条 - 使用 overflow-hidden 确保圆角和裁剪 */}
+            <div className="absolute inset-0 w-full h-full bg-black/10 rounded-full overflow-hidden">
+              {/* 缓冲进度 */}
+              <div
+                className={`absolute left-0 top-0 h-full bg-gray-300 transition-all duration-300`}
+                style={{ width: `${buffered}%` }}
+              />
 
-            {/* 已播放进度 */}
-            <div
-              className={`absolute left-0 top-0 h-full rounded-full transition-all duration-100 bg-gray-800`}
-              style={{ width: `${progress}%` }}
-            />
+              {/* 已播放进度 */}
+              <div
+                className={`absolute left-0 top-0 h-full rounded-full transition-all duration-100 bg-gray-800`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
 
-            {/* 幽灵魔法师滑块 / 魔法杖滑块 */}
+            {/* 幽灵魔法师滑块 / 魔法杖滑块 - 放在 overflow-hidden 容器外面以免被裁剪 */}
             <div
-              className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200
+              className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 z-10
                 ${isHovering || isDragging || isPlaying ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
               `}
               style={{ left: `${progress}%` }}
