@@ -168,6 +168,11 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const [isLoading, setIsLoading] = useState(false) // 默认不显示加载中，防止移动端无限加载
   const [error, setError] = useState(false)
 
+  // 使用 ref 来追踪用户的播放意图
+  // 这对于移动端非常重要，因为我们可能在音频加载完成之前就点击了播放
+  // 此时我们需要记录"用户想要播放"，并在音频就绪时自动播放
+  const playIntentRef = useRef(false)
+
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
 
@@ -186,18 +191,62 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       const d = audio.duration
       if (Number.isFinite(d)) {
         setDuration(d)
+        // 如果我们有播放意图，加载元数据后不要取消 loading
+        // 而是等待 canplay 事件来决定是否取消
+        if (!playIntentRef.current) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    const handleCanPlay = () => {
+      // 如果用户想要播放，并且当前是暂停状态，尝试播放
+      if (playIntentRef.current && audio.paused) {
+        const playPromise = audio.play()
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error('Auto-play after load failed:', error)
+            // 如果自动播放失败，重置意图和加载状态
+            playIntentRef.current = false
+            setIsLoading(false)
+            setIsPlaying(false)
+          })
+        }
+      } else if (!playIntentRef.current) {
+        // 只有在没有播放意图时才取消 loading
+        // 如果有播放意图，我们要等到 playing 事件才取消 loading
         setIsLoading(false)
       }
     }
 
-    const handleCanPlay = () => setIsLoading(false)
     const handleWaiting = () => setIsLoading(true)
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
-    const handleEnded = () => setIsPlaying(false)
+
+    const handlePlay = () => {
+      setIsPlaying(true)
+      playIntentRef.current = true
+    }
+
+    const handlePause = () => {
+      setIsPlaying(false)
+      playIntentRef.current = false
+      setIsLoading(false)
+    }
+
+    const handlePlaying = () => {
+      setIsLoading(false)
+      setIsPlaying(true)
+    }
+
+    const handleEnded = () => {
+      setIsPlaying(false)
+      playIntentRef.current = false
+      setIsLoading(false)
+    }
+
     const handleError = () => {
       setIsLoading(false)
       setError(true)
+      playIntentRef.current = false
     }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
@@ -207,7 +256,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     audio.addEventListener('waiting', handleWaiting)
     audio.addEventListener('play', handlePlay)
     audio.addEventListener('pause', handlePause)
-    audio.addEventListener('playing', handleCanPlay)
+    audio.addEventListener('playing', handlePlaying)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('error', handleError)
 
@@ -238,25 +287,35 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         audioRef.current.load()
         setError(false)
         setIsLoading(true)
+        playIntentRef.current = true // 设置播放意图
         return
       }
-      
+
       if (audioRef.current.paused) {
-        // 如果是首次播放（readyState === 0），显式调用 load()
-        if (audioRef.current.readyState === 0) {
-          audioRef.current.load()
-        }
+        // 用户想要播放
+        playIntentRef.current = true
+        setIsLoading(true) // 立即显示加载状态
+
+        // 关键：在移动端，直接调用 play() 是最稳妥的唤醒方式
+        // 不要先 load()，除非是错误重试。直接 play() 会自动触发加载
         const playPromise = audioRef.current.play()
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.error('Playback failed:', error)
-            // 不需要手动 setIsPlaying(false)，因为 pause 事件会触发
+            // 只有当真正的错误发生时才重置状态
+            // AbortError 是常见的，比如用户快速点击暂停，这时候不需要处理
+            if (error.name !== 'AbortError') {
+              playIntentRef.current = false
+              setIsLoading(false)
+            }
           })
         }
       } else {
+        // 用户想要暂停
+        playIntentRef.current = false
         audioRef.current.pause()
+        setIsLoading(false)
       }
-      // 移除手动 setIsPlaying，完全依赖事件驱动
     }
   }
 
