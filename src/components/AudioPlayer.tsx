@@ -167,6 +167,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const [isHovering, setIsHovering] = useState(false)
   const [isLoading, setIsLoading] = useState(false) // 默认不显示加载中，防止移动端无限加载
   const [isReady, setIsReady] = useState(false) // 追踪音频是否已准备好播放
+  const [buffered, setBuffered] = useState(0) // 缓冲进度 0-100
   const [error, setError] = useState(false)
 
   // 使用 ref 来追踪用户的播放意图
@@ -185,6 +186,25 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       if (!isDragging) {
         const time = audio.currentTime
         setCurrentTime(Number.isFinite(time) ? time : 0)
+      }
+    }
+
+    const handleProgress = () => {
+      if (audio.duration > 0 && audio.buffered.length > 0) {
+        // Find the buffered range that covers the current time
+        const currentTime = audio.currentTime
+        for (let i = 0; i < audio.buffered.length; i++) {
+          if (audio.buffered.start(i) <= currentTime && audio.buffered.end(i) >= currentTime) {
+            const bufferedEnd = audio.buffered.end(i)
+            setBuffered((bufferedEnd / audio.duration) * 100)
+            break
+          }
+        }
+        // Fallback: just take the last buffered end if current time not covered (e.g. initial load)
+        if (audio.buffered.length > 0) {
+          const lastBuffered = audio.buffered.end(audio.buffered.length - 1)
+          setBuffered(Math.max((lastBuffered / audio.duration) * 100, 0))
+        }
       }
     }
 
@@ -257,6 +277,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     }
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('progress', handleProgress)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('durationchange', handleLoadedMetadata)
     audio.addEventListener('canplay', handleCanPlay)
@@ -278,6 +299,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('progress', handleProgress)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('durationchange', handleLoadedMetadata)
       audio.removeEventListener('canplay', handleCanPlay)
@@ -300,6 +322,14 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         setIsLoading(true)
         // 这里不设置 playIntent，因为我们想要用户在加载完成后再次点击播放
         // playIntentRef.current = true 
+        return
+      }
+
+      // 允许在 loading 状态下点击取消
+      if (isLoading) {
+        playIntentRef.current = false
+        audioRef.current.pause()
+        setIsLoading(false)
         return
       }
 
@@ -413,12 +443,10 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       {/* 播放/暂停按钮 */}
       <button
         onClick={togglePlay}
-        disabled={isLoading}
-        // 移除 disabled 状态，允许用户点击播放来触发加载
+        // 移除 disabled 状态，允许用户点击播放来触发加载或取消加载
         className={`w-8 h-8 flex items-center justify-center rounded-full shrink-0 transition-all active:scale-95
           bg-white text-gray-800 hover:bg-gray-50 shadow-sm p-1.5
           ${!isReady && !isLoading ? 'opacity-60' : ''}
-          ${isLoading ? 'cursor-not-allowed opacity-80' : ''}
         `}
       >
         {isLoading ? (
@@ -446,8 +474,14 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         >
           <div
             ref={progressBarRef}
-            className="w-full h-1 bg-black/10 rounded-full relative"
+            className="w-full h-1 bg-black/10 rounded-full relative overflow-hidden"
           >
+            {/* 缓冲进度 */}
+            <div
+              className={`absolute left-0 top-0 h-full bg-gray-300 transition-all duration-300`}
+              style={{ width: `${buffered}%` }}
+            />
+
             {/* 已播放进度 */}
             <div
               className={`absolute left-0 top-0 h-full rounded-full transition-all duration-100 bg-gray-800`}
