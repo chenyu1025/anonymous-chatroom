@@ -15,6 +15,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
   const [showTools, setShowTools] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [recordedAudio, setRecordedAudio] = useState<{ blob: Blob; url: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -96,7 +97,9 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
         }
 
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        uploadVoice(blob)
+        const url = URL.createObjectURL(blob)
+        setRecordedAudio({ blob, url })
+        setIsRecording(false)
       }
 
       mediaRecorder.start()
@@ -138,6 +141,19 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
     }
   }
 
+  const cancelRecording = () => {
+    if (recordedAudio) {
+      URL.revokeObjectURL(recordedAudio.url)
+      setRecordedAudio(null)
+    }
+  }
+
+  const confirmSendVoice = () => {
+    if (recordedAudio) {
+      uploadVoice(recordedAudio.blob)
+    }
+  }
+
   const uploadVoice = async (blob: Blob) => {
     setUploading(true)
     try {
@@ -154,6 +170,7 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
 
       await onSendMessage('', 'audio', publicUrl)
       setShowTools(false)
+      setRecordedAudio(null) // Clear after success
     } catch (error) {
       console.error('Voice upload failed:', error)
       alert('语音发送失败')
@@ -167,6 +184,35 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
       {uploading && (
         <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+        </div>
+      )}
+
+      {/* 语音预览弹窗 */}
+      {recordedAudio && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-medium text-center text-gray-800">发送语音消息？</h3>
+
+            <div className="flex justify-center py-4">
+              <audio controls src={recordedAudio.url} className="w-full" />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelRecording}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmSendVoice}
+                className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+              >
+                <Send size={16} />
+                <span>发送</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

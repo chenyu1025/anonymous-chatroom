@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
       .limit(limit)
 
     if (before) {
-      query = query.lt('created_at', before)
+      // 确保 before 是有效的时间戳格式
+      const beforeDate = new Date(before)
+      if (!isNaN(beforeDate.getTime())) {
+        query = query.lt('created_at', beforeDate.toISOString())
+      }
     }
 
     const { data, error } = await query

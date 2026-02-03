@@ -23,6 +23,7 @@ export default function ChatRoom() {
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -84,7 +85,7 @@ export default function ChatRoom() {
       // 优先使用 UUID 匹配（适用于所有消息），降级使用 session_id 匹配（适用于带有 users 关联信息的消息）
       const isMyMessage = currentUserUuid
         ? msg.user_id === currentUserUuid
-        : msg.users?.session_id === currentUserId
+        : msg.users?.session_id === currentUserId || msg.user_id === currentUserId
 
       if (isMyMessage) {
         return {
@@ -144,6 +145,33 @@ export default function ChatRoom() {
           setMessages((prev) => [...prev, newMessage])
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          const newUser = payload.new
+          if (newUser && newUser.id && newUser.theme_id) {
+            // 更新该用户所有历史消息的主题
+            setMessages((prev) => prev.map((msg) => {
+              if (msg.user_id === newUser.id) {
+                const updatedMsg: Message = {
+                  ...msg,
+                  users: {
+                    ...(msg.users || { session_id: '' }), // 确保 session_id 存在
+                    theme_id: newUser.theme_id
+                  }
+                }
+                return updatedMsg
+              }
+              return msg
+            }))
+          }
+        }
+      )
       .subscribe()
 
     return () => {
@@ -183,6 +211,7 @@ export default function ChatRoom() {
     if (isLoadingMore || !hasMore || messages.length === 0) return
 
     setIsLoadingMore(true)
+    setLoadError(false)
     isLoadingMoreRef.current = true
 
     // 记录当前滚动高度
@@ -192,14 +221,33 @@ export default function ChatRoom() {
 
     try {
       const oldestMessage = messages[0]
-      const res = await fetch(`/api/messages?limit=50&before=${oldestMessage.created_at}`)
+      if (!oldestMessage?.created_at) {
+        throw new Error('Invalid message data')
+      }
+
+      console.log('Loading more messages before:', oldestMessage.created_at)
+      const res = await fetch(`/api/messages?limit=50&before=${encodeURIComponent(oldestMessage.created_at)}`)
       if (!res.ok) throw new Error('Network response was not ok')
 
       const data = await res.json()
+      console.log('Loaded messages:', data.messages?.length)
 
       if (data.messages && data.messages.length > 0) {
         const newMessages = data.messages.reverse()
-        setMessages(prev => [...newMessages, ...prev])
+        setMessages(prev => {
+          // 过滤掉已存在的重复消息，避免 key 冲突
+          const existingIds = new Set(prev.map(m => m.id))
+          const uniqueNewMessages = newMessages.filter((m: Message) => !existingIds.has(m.id))
+
+          console.log('Unique new messages:', uniqueNewMessages.length)
+
+          if (uniqueNewMessages.length === 0) {
+            // 如果获取到的消息都已存在，可能是因为时间戳精度问题，尝试再往前查一点或者停止加载
+            // 这里我们简单地停止加载，避免无限循环
+            return prev
+          }
+          return [...uniqueNewMessages, ...prev]
+        })
         if (data.messages.length < 50) setHasMore(false)
       } else {
         setHasMore(false)
@@ -207,7 +255,7 @@ export default function ChatRoom() {
     } catch (error) {
       console.error('Failed to load more messages:', error)
       isLoadingMoreRef.current = false // 发生错误时重置，避免错误的滚动调整
-      // 可以在这里添加用户提示
+      setLoadError(true)
     } finally {
       setIsLoadingMore(false)
     }
@@ -336,9 +384,12 @@ export default function ChatRoom() {
             <button
               onClick={loadMoreMessages}
               disabled={isLoadingMore}
-              className="text-sm text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-1 rounded-full hover:bg-purple-50 transition-colors"
+              className={`text-sm px-4 py-1 rounded-full transition-colors ${loadError
+                ? 'text-red-600 hover:bg-red-50'
+                : 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isLoadingMore ? '加载中...' : '点击加载更多历史消息'}
+              {isLoadingMore ? '加载中...' : (loadError ? '加载失败，点击重试' : '点击加载更多历史消息')}
             </button>
           </div>
         )}
