@@ -7,6 +7,7 @@ export type FullScreenEffectType =
   | 'ancient-tragedy'  // 旧梦：寒雪+残红
   | 'star-paparazzi'   // 夜规：闪光灯+钻石
   | 'apocalypse-ash'   // 野孩子：余烬+灰烬
+  | 'birthday-starlight' // 生日：星光魔法 + 年龄彩蛋
   | 'none'
 
 export interface EasterEggConfig {
@@ -15,6 +16,7 @@ export interface EasterEggConfig {
   fullScreen?: FullScreenEffectType
   color?: string
   emoji?: string
+  dateExclusive?: { month: number; day: number } // 可选：指定生效日期
 }
 
 // 小说彩蛋配置
@@ -80,14 +82,32 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['魔法师', 'wizard', 'Wizard'],
     effect: 'wizard-shadow',
     fullScreen: 'none'
+  },
+  {
+    // 10. 生日彩蛋 -> 3.25 全屏庆典
+    keywords: ['3.25', '3月25', '0325', '生日快乐', 'Happy Birthday', 'happy birthday', '生快'],
+    effect: 'glow',
+    color: '#FFD700', // 金色
+    fullScreen: 'birthday-starlight',
+    emoji: '🌟',
+    dateExclusive: { month: 2, day: 25 } // 仅在 3月25日生效 (月份从0开始)
   }
 ]
 
 export function getEasterEgg(content: string): EasterEggConfig | null {
   if (!content) return null
   const lowerContent = content.toLowerCase()
+  const now = new Date()
 
-  return EASTER_EGGS.find(egg =>
-    egg.keywords.some(keyword => lowerContent.includes(keyword.toLowerCase()))
-  ) || null
+  return EASTER_EGGS.find(egg => {
+    // 1. 检查日期限制
+    if (egg.dateExclusive) {
+      if (now.getMonth() !== egg.dateExclusive.month || now.getDate() !== egg.dateExclusive.day) {
+        return false
+      }
+    }
+
+    // 2. 检查关键词
+    return egg.keywords.some(keyword => lowerContent.includes(keyword.toLowerCase()))
+  }) || null
 }

@@ -270,6 +270,54 @@ const ApocalypseAsh = () => (
 )
 
 /* --------------------------------------------------------------------------------
+   8. Birthday Starlight (星光魔法 - 3.25 生日)
+   - 极光背景 + 汇聚星光 + 隐晦年龄显示
+-------------------------------------------------------------------------------- */
+const BirthdayStarlight = () => {
+  // 计算年龄 (1997-03-25)
+  const birthYear = 1997
+  const currentYear = new Date().getFullYear()
+  const age = currentYear - birthYear
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden bg-slate-900/40 animate-in fade-in duration-1000">
+      {/* 极光背景 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-amber-900/30 animate-pulse-slow" />
+
+      {/* 魔法星光 */}
+      {Array.from({ length: 50 }).map((_, i) => (
+        <div
+          key={`star-${i}`}
+          className="absolute text-yellow-200 animate-twinkle-float"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            fontSize: `${Math.random() * 20 + 10}px`,
+            animationDuration: `${Math.random() * 3 + 2}s`,
+            animationDelay: `${Math.random() * 2}s`,
+            opacity: 0
+          }}
+        >
+          {Math.random() > 0.5 ? '✨' : '⭐'}
+        </div>
+      ))}
+
+      {/* 中心文字与年龄彩蛋 */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
+        <div className="text-4xl md:text-6xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-100 to-yellow-200 animate-float-up drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+          Happy 3.25
+        </div>
+
+        {/* 隐晦的年龄显示：Level X */}
+        <div className="mt-4 text-lg md:text-xl font-mono text-yellow-100/60 tracking-[0.3em] md:tracking-[0.5em] opacity-0 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-1000 fill-mode-forwards text-center">
+          LEVEL {age} UNLOCKED
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* --------------------------------------------------------------------------------
    Main Component
 -------------------------------------------------------------------------------- */
 export default function FullScreenEffects({ type, onComplete }: FullScreenEffectProps) {
@@ -292,6 +340,7 @@ export default function FullScreenEffects({ type, onComplete }: FullScreenEffect
       {type === 'ancient-tragedy' && <AncientTragedy />}
       {type === 'star-paparazzi' && <StarPaparazzi />}
       {type === 'apocalypse-ash' && <ApocalypseAsh />}
+      {type === 'birthday-starlight' && <BirthdayStarlight />}
     </div>
   )
 }

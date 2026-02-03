@@ -40,6 +40,21 @@ export default function ChatRoom() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+  const [isBirthday, setIsBirthday] = useState(false)
+
+  // 检查是否是 3.25 生日
+  useEffect(() => {
+    const checkBirthday = () => {
+      const now = new Date()
+      const is325 = now.getMonth() === 2 && now.getDate() === 25 // 3月是 month 2
+      setIsBirthday(is325)
+    }
+
+    checkBirthday()
+    // 每天检查一次 (或者如果用户跨夜了)
+    const timer = setInterval(checkBirthday, 60000 * 60)
+    return () => clearInterval(timer)
+  }, [])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -480,8 +495,11 @@ export default function ChatRoom() {
       <header className="glass shadow-sm px-4 py-3 z-10 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h1 className="text-xl font-semibold text-gray-800">
+            <h1 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
               {userType === 'owner' ? '我的聊天室' : '匿名聊天室'}
+              {isBirthday && (
+                <span className="text-lg animate-pulse" title="Happy 3.25!">👑</span>
+              )}
             </h1>
             {userType === 'owner' && (
               <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
