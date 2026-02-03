@@ -1,7 +1,7 @@
 import { Message } from '@/lib/types'
 
 import Image from 'next/image'
-import { Reply } from 'lucide-react'
+import { Reply, Loader2 } from 'lucide-react'
 import { OWNER_THEMES } from '@/lib/themes'
 
 interface MessageBubbleProps {
@@ -18,6 +18,7 @@ import { getEasterEgg } from '@/lib/easter-eggs'
 
 export default function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
   const [isZoomed, setIsZoomed] = useState(false)
+  const [isImageLoading, setIsImageLoading] = useState(true)
 
   // 计算彩蛋效果
   const easterEgg = useMemo(() => {
@@ -217,7 +218,10 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
                 alt="图片"
                 fill
                 className="object-cover cursor-zoom-in hover:scale-105 transition-transform duration-500"
-                onClick={() => setIsZoomed(true)}
+                onClick={() => {
+                  setIsImageLoading(true)
+                  setIsZoomed(true)
+                }}
               />
             </div>
           ) : message.type === 'audio' && message.file_url ? (
@@ -249,16 +253,23 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
       {/* 图片放大查看器 */}
       {isZoomed && message.type === 'image' && message.file_url && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setIsZoomed(false)}
         >
           <div className="relative w-full h-full max-w-4xl max-h-screen p-4 flex items-center justify-center">
+            {isImageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <Loader2 className="w-10 h-10 animate-spin text-white" />
+              </div>
+            )}
             <Image
               src={message.file_url}
               alt="查看大图"
               fill
-              className="object-contain animate-in zoom-in-95 duration-300"
-              quality={100}
+              className={`object-contain transition-opacity duration-300 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setIsImageLoading(false)}
+              sizes="100vw"
+              priority
             />
             <button
               className="absolute top-6 right-6 text-white/80 hover:text-white bg-black/50 p-2 rounded-full"

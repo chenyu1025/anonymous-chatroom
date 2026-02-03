@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { AudioRecorder } from '@/lib/audio-recorder'
 
 import { Message } from '@/lib/types'
+import { compressImage } from '@/lib/image-compression'
 
 interface MessageInputProps {
   onSendMessage: (content: string, type?: 'text' | 'image' | 'audio', fileUrl?: string) => void
@@ -73,11 +74,27 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
 
     setUploading(true)
     try {
-      const fileExt = file.name.split('.').pop()
+      // 压缩图片
+      let fileToUpload: File | Blob = file
+      let fileExt = file.name.split('.').pop()
+
+      // 如果是图片，尝试压缩
+      if (file.type.startsWith('image/')) {
+        try {
+          const compressedBlob = await compressImage(file)
+          fileToUpload = compressedBlob
+          fileExt = 'jpg' // 压缩后统一为 jpg
+        } catch (err) {
+          console.error('Image compression failed, using original file:', err)
+        }
+      }
+
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
       const { data, error } = await supabase.storage
         .from('images')
-        .upload(fileName, file)
+        .upload(fileName, fileToUpload, {
+          contentType: fileToUpload === file ? undefined : 'image/jpeg'
+        })
 
       if (error) throw error
 
