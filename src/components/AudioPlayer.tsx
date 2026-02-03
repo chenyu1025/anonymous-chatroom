@@ -188,11 +188,13 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('durationchange', handleLoadedMetadata)
     audio.addEventListener('ended', handleEnded)
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('durationchange', handleLoadedMetadata)
       audio.removeEventListener('ended', handleEnded)
     }
   }, [isDragging])
@@ -281,7 +283,7 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       className={`flex items-center gap-2 px-2 py-1.5 rounded-full select-none transition-all duration-300
         bg-white/30 backdrop-blur-md border border-white/20 shadow-sm
         text-gray-800
-        w-[120px] hover:w-[200px] group
+        ${isPlaying || isHovering ? 'w-[200px]' : 'w-[120px]'} group
       `}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -304,15 +306,15 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
       {/* 进度条容器 */}
       <div className="flex-1 flex flex-col justify-center h-6 relative group-hover:opacity-100">
-        {/* 时间显示 - 悬浮或拖动时显示在上方 */}
-        <div className={`absolute -top-4 left-0 w-full flex justify-between text-[9px] font-medium transition-opacity duration-200 ${isHovering || isDragging ? 'opacity-100' : 'opacity-0'}`}>
+        {/* 时间显示 - 悬浮或拖动或播放时显示在上方 */}
+        <div className={`absolute -top-4 left-0 w-full flex justify-between text-[9px] font-medium transition-opacity duration-200 ${isHovering || isDragging || isPlaying ? 'opacity-100' : 'opacity-0'}`}>
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
 
         {/* 进度条轨道 - 增加点击热区 */}
         <div
-          className="h-4 flex items-center cursor-pointer group/bar relative"
+          className="h-8 -my-2 flex items-center cursor-pointer group/bar relative"
           onMouseDown={handleDragStart}
           onTouchStart={handleDragStart}
         >
@@ -329,15 +331,15 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
             {/* 幽灵魔法师滑块 / 魔法杖滑块 */}
             <div
               className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200
-                ${isHovering || isDragging ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+                ${isHovering || isDragging || isPlaying ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
               `}
               style={{ left: `${progress}%` }}
             >
               <div className="text-gray-800">
                 {isOwner ? (
-                  <GhostWizard isMoving={isDragging || (isPlaying && isHovering)} />
+                  <GhostWizard isMoving={isDragging || isPlaying} />
                 ) : (
-                  <MagicWand isMoving={isDragging || (isPlaying && isHovering)} />
+                  <MagicWand isMoving={isDragging || isPlaying} />
                 )}
               </div>
             </div>
