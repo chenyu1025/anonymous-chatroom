@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, userType, userId, type = 'text', fileUrl, replyToId } = await request.json()
+    const { id, content, userType, userId, type = 'text', fileUrl, replyToId } = await request.json()
 
     if ((!content && !fileUrl) || !userType || !userId) {
       return NextResponse.json(
@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       .from('messages')
       .insert([
         {
+          ...(id ? { id } : {}),
           content: content?.trim() || (type === 'image' ? '[图片]' : '[语音]'),
           user_id: user.id, // 使用正确的 UUID
           user_type: userType,

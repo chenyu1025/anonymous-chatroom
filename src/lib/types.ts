@@ -12,6 +12,7 @@ export type Message = {
     session_id: string
     theme_id?: string
   }
+  isOptimistic?: boolean
 }
 
 export type User = {

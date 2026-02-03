@@ -101,6 +101,23 @@ body {
   animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
+/* 点击火花动画 */
+@keyframes sparkle-fade {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle-fade 0.8s ease-out forwards;
+}
+
 /* 响应式字体大小 */
 @media (max-width: 640px) {
   html {

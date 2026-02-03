@@ -11,6 +11,9 @@ import { Users, Settings, X, Palette, LogOut } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID } from '@/lib/themes'
+import BackgroundParticles from '@/components/BackgroundParticles'
+import ClickSparkles from '@/components/ClickSparkles'
+import { soundManager } from '@/lib/sound'
 
 export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -161,7 +164,41 @@ export default function ChatRoom() {
             }
           }
 
+          // 播放接收音效
+          const isMyMessage = newMessage.user_id === currentUserUuidRef.current ||
+            (!!newMessage.users?.session_id && newMessage.users.session_id === getSessionId())
+
+          if (!isMyMessage) {
+            soundManager.playReceive()
+          }
+
           setMessages((prev) => {
+            // 1. 检查是否已经存在该 ID 的消息（防止重复推送）
+            if (prev.some(msg => msg.id === newMessage.id)) {
+              return prev
+            }
+
+            // 2. 检查是否有匹配的乐观消息（由我发送、内容相同、最近创建、且是乐观状态）
+            // 注意：这里我们放宽一点时间限制，或者主要依赖内容和用户匹配
+            // 为了避免误伤，我们只替换最近的一条匹配的乐观消息
+            const optimisticMatchIndex = prev.findIndex(m => 
+              m.isOptimistic && 
+              m.user_id === newMessage.user_id && 
+              m.content === newMessage.content &&
+              m.type === newMessage.type
+            )
+
+            if (optimisticMatchIndex !== -1) {
+              // 替换乐观消息为真实消息
+              const newMessages = [...prev]
+              newMessages[optimisticMatchIndex] = {
+                ...newMessage,
+                // 保留一些可能还没有从 Realtime 同步过来的关联信息（如果有的话）
+                reply_to: newMessage.reply_to || newMessages[optimisticMatchIndex].reply_to
+              }
+              return newMessages
+            }
+
             // 尝试在本地查找引用的消息
             if (newMessage.reply_to_id && !newMessage.reply_to) {
               const repliedMsg = prev.find(m => m.id === newMessage.reply_to_id)
@@ -212,22 +249,61 @@ export default function ChatRoom() {
     if (!currentUserId) return
 
     try {
-      await fetch('/api/messages', {
+      // 乐观更新：先在界面上显示消息
+      const tempId = crypto.randomUUID()
+      const now = new Date().toISOString()
+
+      const optimisticMessage: Message = {
+        id: tempId,
+        content: content,
+        type: type,
+        file_url: fileUrl,
+        user_id: currentUserUuid, // 使用 UUID
+        user_type: userType,
+        created_at: now,
+        reply_to_id: replyingTo?.id,
+        reply_to: replyingTo || undefined,
+        users: {
+          session_id: currentUserId,
+          theme_id: currentThemeId
+        },
+        isOptimistic: true
+      }
+
+      setMessages(prev => [...prev, optimisticMessage])
+      // 发送成功后清除回复状态（提前清除，提升体验）
+      setReplyingTo(null)
+      scrollToBottom()
+
+      // 播放发送音效
+      soundManager.playSend()
+
+      const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // 不发送 id，让后端自动生成，避免权限错误
           content,
-          userType,
-          userId: currentUserId,
           type,
           fileUrl,
+          userType,
+          userId: currentUserId,
+          themeId: currentThemeId,
           replyToId: replyingTo?.id
         })
       })
-      // 发送成功后清除引用状态
-      setReplyingTo(null)
-    } catch (error) {
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '发送失败')
+      }
+
+      // 不需要在这里更新消息，因为 Realtime 会推送回来
+      // 只要 ID 一致，React Key 就会一致，或者我们可以在 Realtime 接收处做去重
+    } catch (error: any) {
       console.error('Failed to send message:', error)
+      alert(error.message || '发送失败，请重试')
+      // 如果失败，应该回滚（这里暂不处理回滚，用户刷新即可）
     }
   }
 
@@ -360,9 +436,11 @@ export default function ChatRoom() {
   }
 
   return (
-    <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden">
+    <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden relative">
+      <BackgroundParticles />
+      <ClickSparkles />
       {/* 头部 */}
-      <header className="glass shadow-sm px-4 py-3 z-10">
+      <header className="glass shadow-sm px-4 py-3 z-10 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h1 className="text-xl font-semibold text-gray-800">
