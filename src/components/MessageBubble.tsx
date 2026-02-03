@@ -7,9 +7,10 @@ interface MessageBubbleProps {
   message: Message
   isCurrentUser: boolean
   userType: 'owner' | 'guest'
+  onReply: (message: Message) => void
 }
 
-export default function MessageBubble({ message, isCurrentUser, userType }: MessageBubbleProps) {
+export default function MessageBubble({ message, isCurrentUser, userType, onReply }: MessageBubbleProps) {
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('zh-CN', {
       hour: '2-digit',
@@ -55,7 +56,28 @@ export default function MessageBubble({ message, isCurrentUser, userType }: Mess
           />
         </div>
       )}
-      <div className={`max-w-[70%] px-4 py-2 rounded-2xl relative ${getBubbleStyles()}`}>
+      <div
+        className={`max-w-[70%] px-4 py-2 rounded-2xl relative ${getBubbleStyles()} cursor-pointer active:scale-95 transition-transform`}
+        onDoubleClick={() => onReply(message)}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          onReply(message)
+        }}
+      >
+        {/* 引用内容 */}
+        {message.reply_to && (
+          <div className="mb-2 p-2 rounded bg-black/5 text-xs border-l-2 border-gray-400/50 truncate max-w-full">
+            <div className="font-bold opacity-75 mb-0.5">
+              {message.reply_to.user_type === 'owner' ? '主人' : '匿名用户'}
+            </div>
+            <div className="truncate opacity-80">
+              {message.reply_to.type === 'image' ? '[图片]' :
+                message.reply_to.type === 'audio' ? '[语音]' :
+                  message.reply_to.content}
+            </div>
+          </div>
+        )}
+
         {/* 小箭头：只有 owner 且使用了主题样式时显示 */}
         {userType === 'owner' && ((themeId && themeId !== 'default') || userType === 'owner') ? (
           <div

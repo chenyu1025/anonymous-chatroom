@@ -21,6 +21,7 @@ export default function ChatRoom() {
   const [userType, setUserType] = useState<'owner' | 'guest'>('guest')
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
 
   // 使用 ref 来追踪最新状态，以便在闭包中使用
   const currentThemeIdRef = useRef(DEFAULT_THEME_ID)
@@ -205,10 +206,12 @@ export default function ChatRoom() {
           userType,
           userId: currentUserId,
           type,
-          fileUrl
+          fileUrl,
+          replyToId: replyingTo?.id
         })
       })
-      // 不需要手动更新 state，因为实时订阅会处理
+      // 发送成功后清除引用状态
+      setReplyingTo(null)
     } catch (error) {
       console.error('Failed to send message:', error)
     }
@@ -422,6 +425,7 @@ export default function ChatRoom() {
                 message={message}
                 isCurrentUser={message.user_id === currentUserId}
                 userType={message.user_type}
+                onReply={setReplyingTo}
               />
             ))}
             <div ref={messagesEndRef} />
@@ -434,6 +438,8 @@ export default function ChatRoom() {
         onSendMessage={sendMessage}
         disabled={!currentUserId}
         userType={userType}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
       />
     </div>
   )

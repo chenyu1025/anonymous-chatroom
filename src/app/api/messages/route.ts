@@ -12,7 +12,16 @@ export async function GET(request: NextRequest) {
       .from('messages')
       .select(`
         *,
-        users!inner(session_id, theme_id)
+        users!inner(session_id, theme_id),
+        reply_to:messages!reply_to_id(
+          id,
+          content,
+          user_type,
+          type,
+          file_url,
+          created_at,
+          user_id
+        )
       `)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -47,7 +56,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, userType, userId, type = 'text', fileUrl } = await request.json()
+    const { content, userType, userId, type = 'text', fileUrl, replyToId } = await request.json()
 
     if ((!content && !fileUrl) || !userType || !userId) {
       return NextResponse.json(
@@ -88,7 +97,8 @@ export async function POST(request: NextRequest) {
           user_id: user.id, // 使用正确的 UUID
           user_type: userType,
           type,
-          file_url: fileUrl
+          file_url: fileUrl,
+          reply_to_id: replyToId
         }
       ])
       .select()

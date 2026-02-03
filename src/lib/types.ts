@@ -6,6 +6,8 @@ export type Message = {
   created_at: string
   type?: 'text' | 'image' | 'audio'
   file_url?: string
+  reply_to_id?: string
+  reply_to?: Message
   users?: {
     session_id: string
     theme_id?: string
