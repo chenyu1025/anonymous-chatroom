@@ -7,7 +7,7 @@ import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
 import { Message } from '@/lib/types'
 import { getSessionId, getUserType } from '@/lib/session'
-import { Users, Settings, X, Palette, LogOut } from 'lucide-react'
+import { Users, Settings, X, Palette, LogOut, ChevronDown } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID } from '@/lib/themes'
@@ -34,6 +34,7 @@ export default function ChatRoom() {
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -374,10 +375,16 @@ export default function ChatRoom() {
 
   // 监听滚动
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop } = e.currentTarget
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+
+    // 加载更多
     if (scrollTop < 50 && hasMore && !isLoadingMore) {
       loadMoreMessages()
     }
+
+    // 显示/隐藏回到底部按钮 (距离底部超过 300px 时显示)
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+    setShowScrollToBottom(distanceFromBottom > 300)
   }
 
   // 处理消息更新后的滚动位置
@@ -559,6 +566,17 @@ export default function ChatRoom() {
           </div>
         )}
       </div>
+
+      {/* 快速回到底部按钮 */}
+      {showScrollToBottom && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-32 right-6 md:bottom-24 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-purple-100 text-purple-600 hover:bg-purple-50 hover:scale-110 active:scale-95 transition-all duration-300 z-20 animate-in fade-in slide-in-from-bottom-4 group"
+          title="回到底部"
+        >
+          <ChevronDown size={24} className="group-hover:translate-y-0.5 transition-transform" />
+        </button>
+      )}
 
       {/* 输入区域 */}
       <MessageInput

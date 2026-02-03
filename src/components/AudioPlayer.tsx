@@ -226,8 +226,13 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
   const handleDragMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (isDragging && progressBarRef.current && duration) {
+      // Prevent scrolling on mobile
+      if (e.cancelable && (e.type === 'touchmove' || 'touches' in e)) {
+        e.preventDefault()
+      }
+
       const rect = progressBarRef.current.getBoundingClientRect()
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX
       const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
       const newTime = percentage * duration
       setCurrentTime(newTime)
@@ -247,13 +252,13 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     if (isDragging) {
       window.addEventListener('mousemove', handleDragMove)
       window.addEventListener('mouseup', handleDragEnd)
-      window.addEventListener('touchmove', handleDragMove)
+      window.addEventListener('touchmove', handleDragMove, { passive: false })
       window.addEventListener('touchend', handleDragEnd)
     }
     return () => {
       window.removeEventListener('mousemove', handleDragMove)
       window.removeEventListener('mouseup', handleDragEnd)
-      window.removeEventListener('touchmove', handleDragMove)
+      window.removeEventListener('touchmove', handleDragMove) // removeEventListener ignores options usually, but for safety
       window.removeEventListener('touchend', handleDragEnd)
     }
   }, [isDragging, handleDragMove, handleDragEnd])
