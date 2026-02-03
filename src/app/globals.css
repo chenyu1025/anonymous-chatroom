@@ -184,3 +184,542 @@ button:active {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
+
+/* 震动特效 */
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* 漂浮动画 (爱心/气泡) */
+@keyframes float-up {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+  }
+
+  100% {
+    transform: translateY(-40px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-float-up {
+  animation: float-up 2s ease-out forwards;
+}
+
+/* 辉光脉冲 */
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--glow-color, #a855f7), 0 0 10px var(--glow-color, #a855f7);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--glow-color, #a855f7), 0 0 30px var(--glow-color, #a855f7);
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 2s infinite;
+}
+
+/* 雨滴下落 */
+@keyframes rain-drop {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+}
+
+.animate-rain {
+  animation: rain-drop 1s linear infinite;
+}
+
+/* 火焰摇曳 */
+@keyframes fire-flicker {
+
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+    opacity: 0.9;
+  }
+
+  25% {
+    transform: scale(1.1) rotate(2deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.95) rotate(-1deg);
+    opacity: 0.8;
+  }
+
+  75% {
+    transform: scale(1.05) rotate(1deg);
+    opacity: 1;
+  }
+}
+
+.animate-fire {
+  animation: fire-flicker 0.3s infinite alternate;
+  filter: drop-shadow(0 0 2px orange);
+}
+
+/* --------------------------------------------------------------------------------
+   V2 高级特效动画定义
+-------------------------------------------------------------------------------- */
+
+/* 1. Sakura Breeze */
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+@keyframes sakura-complex {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(100px, 100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-sakura-complex {
+  animation-name: sakura-complex;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+
+/* 2. Police Glitch */
+@keyframes police-strobe {
+
+  0%,
+  49% {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+
+  /* Blue */
+  50%,
+  100% {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+
+  /* Red */
+}
+
+.animate-police-strobe {
+  animation: police-strobe 0.5s steps(1) infinite;
+}
+
+@keyframes glitch-line {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+}
+
+.animate-glitch-line {
+  animation-name: glitch-line;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes digital-rain {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.animate-digital-rain {
+  animation-name: digital-rain;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+
+/* 3. City Dream */
+@keyframes float-bokeh {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  33% {
+    transform: translate(30px, -50px);
+  }
+
+  66% {
+    transform: translate(-20px, 20px);
+  }
+}
+
+.animate-float-bokeh {
+  animation: float-bokeh 20s ease-in-out infinite;
+}
+
+@keyframes feather-sway {
+  0% {
+    transform: translateY(0) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.9;
+  }
+
+  50% {
+    transform: translateY(50vh) rotate(45deg) translateX(50px);
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(-10deg) translateX(-20px);
+    opacity: 0;
+  }
+}
+
+.animate-feather-sway {
+  animation-name: feather-sway;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+
+/* 4. Gothic Fog */
+@keyframes fog-flow {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-fog-flow {
+  animation: fog-flow 20s linear infinite;
+}
+
+.animate-fog-flow-reverse {
+  animation: fog-flow 30s linear infinite reverse;
+}
+
+@keyframes bat-fly {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate(50vw, -20vh) scale(1);
+  }
+
+  100% {
+    transform: translate(120vw, -10vh) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-bat-fly {
+  animation-name: bat-fly;
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  animation-fill-mode: forwards;
+}
+
+
+/* 5. Ancient Tragedy */
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-10px) translateX(0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+.animate-snow-fall {
+  animation-name: snow-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes withered-fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(360deg) translateX(-30px);
+    opacity: 0;
+  }
+}
+
+.animate-withered-fall {
+  animation-name: withered-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+
+/* 6. Star Paparazzi */
+@keyframes flash-strobe {
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  5%,
+  15%,
+  25% {
+    opacity: 0.8;
+  }
+
+  10%,
+  20% {
+    opacity: 0;
+  }
+}
+
+.animate-flash-strobe {
+  animation: flash-strobe 1s steps(1) forwards;
+}
+
+@keyframes diamond-sparkle {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2) rotate(45deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+.animate-diamond-sparkle {
+  animation-name: diamond-sparkle;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+
+/* 7. Apocalypse Ash */
+@keyframes ash-fall {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(-20px, 100vh);
+    opacity: 0;
+  }
+}
+
+.animate-ash-fall {
+  animation-name: ash-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes ember-rise {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(20px, -50vh) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-ember-rise {
+  animation-name: ember-rise;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+
+/* 8. Predator's Shadow (Shark) */
+@keyframes shark-swim {
+  0% {
+    transform: translateX(-150%) scale(0.8);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.2;
+    transform: translateX(50%) scale(1);
+  }
+
+  90% {
+    opacity: 0.15;
+  }
+
+  100% {
+    transform: translateX(250%) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-shark-swim {
+  animation: shark-swim 7s linear infinite;
+  /* animation-delay: 2s; Removed delay for immediate start */
+}
+
+
+/* 9. Wizard Fly */
+@keyframes wizard-fly {
+  0% {
+    transform: translateX(-150%) translateY(0) scale(0.8);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.2;
+  }
+
+  25% {
+    transform: translateX(-50%) translateY(-10px) scale(0.9);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: translateX(50%) translateY(0) scale(1);
+  }
+
+  75% {
+    transform: translateX(150%) translateY(-10px) scale(0.9);
+  }
+
+  90% {
+    opacity: 0.2;
+  }
+
+  100% {
+    transform: translateX(250%) translateY(0) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-wizard-fly {
+  animation: wizard-fly 8s ease-in-out infinite;
+}

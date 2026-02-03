@@ -15,6 +15,8 @@ import BackgroundParticles from '@/components/BackgroundParticles'
 import ClickSparkles from '@/components/ClickSparkles'
 import FluidCursorTrail from '@/components/FluidCursorTrail'
 import { soundManager } from '@/lib/sound'
+import { FullScreenEffectType, getEasterEgg } from '@/lib/easter-eggs'
+import FullScreenEffects from '@/components/FullScreenEffects'
 
 export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -26,6 +28,9 @@ export default function ChatRoom() {
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+
+  // 全屏特效状态
+  const [fullScreenEffect, setFullScreenEffect] = useState<FullScreenEffectType>('none')
 
   // 使用 ref 来追踪最新状态，以便在闭包中使用
   const currentThemeIdRef = useRef(DEFAULT_THEME_ID)
@@ -172,6 +177,13 @@ export default function ChatRoom() {
 
           if (!isMyMessage) {
             soundManager.playReceive()
+            // 收到别人发的消息时，也触发全屏彩蛋
+            if (newMessage.type === 'text' && newMessage.content) {
+              const easterEgg = getEasterEgg(newMessage.content)
+              if (easterEgg && easterEgg.fullScreen) {
+                setFullScreenEffect(easterEgg.fullScreen)
+              }
+            }
           }
 
           setMessages((prev) => {
@@ -279,6 +291,14 @@ export default function ChatRoom() {
 
       // 播放发送音效
       soundManager.playSend()
+
+      // 检查并触发全屏彩蛋 (仅限文本消息)
+      if (type === 'text') {
+        const easterEgg = getEasterEgg(content)
+        if (easterEgg && easterEgg.fullScreen) {
+          setFullScreenEffect(easterEgg.fullScreen)
+        }
+      }
 
       const res = await fetch('/api/messages', {
         method: 'POST',
@@ -448,6 +468,7 @@ export default function ChatRoom() {
       <BackgroundParticles />
       <ClickSparkles />
       <FluidCursorTrail />
+      <FullScreenEffects type={fullScreenEffect} onComplete={() => setFullScreenEffect('none')} />
       {/* 头部 */}
       <header className="glass shadow-sm px-4 py-3 z-10 relative">
         <div className="flex items-center justify-between">

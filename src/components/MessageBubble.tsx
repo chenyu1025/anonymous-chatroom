@@ -12,11 +12,18 @@ interface MessageBubbleProps {
   onReply: (message: Message) => void
 }
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import AudioPlayer from './AudioPlayer'
+import { getEasterEgg } from '@/lib/easter-eggs'
 
 export default function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
   const [isZoomed, setIsZoomed] = useState(false)
+
+  // 计算彩蛋效果
+  const easterEgg = useMemo(() => {
+    if (message.type !== 'text' || !message.content) return null
+    return getEasterEgg(message.content)
+  }, [message.content, message.type])
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('zh-CN', {
@@ -47,28 +54,44 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
   const isRightAligned = getContainerStyles() === 'justify-end'
 
   const getBubbleStyles = () => {
+    let baseStyles = ''
+
     // 只有 owner 可以应用主题样式
     if (userType === 'owner' && themeId && themeId !== 'default') {
-      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
-    }
-
-    // 默认样式回退
-    if (userType === 'owner') {
-      return `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
+      baseStyles = `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
+    } else if (userType === 'owner') {
+      // 默认样式回退
+      baseStyles = `${theme.bubbleClass} ${theme.textClass} border-2 shadow-sm`
     } else {
       // 访客样式：玻璃拟态 (Glassmorphism)
       if (isRightAligned) {
         // 右边（自己）：半透明，融入感更强
         if (isCurrentUser) {
-          return 'bg-white/40 backdrop-blur-md text-gray-800 shadow-sm border border-white/20'
+          baseStyles = 'bg-white/40 backdrop-blur-md text-gray-800 shadow-sm border border-white/20'
+        } else {
+          // 右边（其他访客）：较不透明，突出显示
+          baseStyles = 'bg-white/75 backdrop-blur-md text-gray-800 shadow-sm border border-white/40'
         }
-        // 右边（其他访客）：较不透明，突出显示
-        return 'bg-white/75 backdrop-blur-md text-gray-800 shadow-sm border border-white/40'
+      } else {
+        // 左边（访客）：半透明白色，带有磨砂感
+        baseStyles = 'bg-white/60 backdrop-blur-md text-gray-800 border border-white/30'
       }
-      // 左边（访客）：半透明白色，带有磨砂感
-      return 'bg-white/60 backdrop-blur-md text-gray-800 border border-white/30'
     }
+
+    // 应用彩蛋样式
+    if (easterEgg) {
+      if (easterEgg.effect === 'shake') baseStyles += ' animate-shake'
+      if (easterEgg.effect === 'glow') baseStyles += ' animate-glow'
+      if (easterEgg.effect === 'fire') baseStyles += ' animate-fire'
+    }
+
+    return baseStyles
   }
+
+  // 动态样式
+  const dynamicStyles = easterEgg?.color ? {
+    '--glow-color': easterEgg.color
+  } as React.CSSProperties : {}
 
   return (
     <>
@@ -90,6 +113,7 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
         )}
         <div
           className={`max-w-[70%] px-4 py-2 rounded-2xl relative ${getBubbleStyles()} group transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md`}
+          style={dynamicStyles}
           onDoubleClick={() => onReply(message)}
           onContextMenu={(e) => {
             e.preventDefault()
@@ -107,6 +131,55 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
                   message.reply_to.type === 'audio' ? '[语音]' :
                     message.reply_to.content}
               </div>
+            </div>
+          )}
+
+          {/* 彩蛋粒子效果容器 */}
+          {easterEgg && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+              {/* 爱心/表情漂浮 */}
+              {(easterEgg.effect === 'love' || easterEgg.effect === 'rain' || easterEgg.effect === 'confetti') && easterEgg.emoji && (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`absolute text-lg ${easterEgg.effect === 'rain' ? 'animate-rain' : 'animate-float-up'}`}
+                    style={{
+                      left: `${Math.random() * 80 + 10}%`,
+                      top: easterEgg.effect === 'rain' ? '-20px' : 'auto',
+                      bottom: easterEgg.effect === 'rain' ? 'auto' : '0',
+                      animationDelay: `${Math.random() * 1.5}s`,
+                      animationDuration: `${Math.random() * 1 + 1.5}s`,
+                      opacity: 0
+                    }}
+                  >
+                    {easterEgg.emoji}
+                  </span>
+                ))
+              )}
+
+              {/* Shark Shadow: 鲨鱼鳍倒影 */}
+              {easterEgg.effect === 'shark-shadow' && (
+                <div className="absolute bottom-0 left-0 w-full h-8 overflow-hidden pointer-events-none">
+                  <div className="absolute bottom-[-4px] animate-shark-swim left-0">
+                    {/* 使用 Shark Emoji 但处理成黑色剪影，并水平翻转使其游向右侧 */}
+                    <span className="text-2xl inline-block transform -scale-x-100 filter brightness-0">
+                      🦈
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Wizard Shadow: 魔法师剪影 */}
+              {easterEgg.effect === 'wizard-shadow' && (
+                <div className="absolute bottom-0 left-0 w-full h-12 overflow-hidden pointer-events-none">
+                  <div className="absolute bottom-1 animate-wizard-fly left-0">
+                    {/* 魔法师 Emoji 处理成黑色剪影 */}
+                    <span className="text-2xl inline-block filter brightness-0">
+                      🧙‍♂️
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
