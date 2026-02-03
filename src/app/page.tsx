@@ -333,13 +333,6 @@ export default function ChatRoom() {
               <Users size={16} />
               <span className="text-sm">{onlineUsers}</span>
             </div>
-            <button
-              onClick={() => setShowThemeSelector(true)}
-              className="text-gray-600 hover:text-gray-800"
-              title="切换主题"
-            >
-              <Palette size={20} />
-            </button>
 
             {userType === 'guest' && (
               <button
@@ -350,13 +343,22 @@ export default function ChatRoom() {
               </button>
             )}
             {userType === 'owner' && (
-              <button
-                onClick={handleLogout}
-                className="text-gray-600 hover:text-red-600"
-                title="退出主人模式"
-              >
-                <LogOut size={20} />
-              </button>
+              <>
+                <button
+                  onClick={() => setShowThemeSelector(true)}
+                  className="text-gray-600 hover:text-gray-800"
+                  title="切换主题"
+                >
+                  <Palette size={20} />
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-red-600"
+                  title="退出主人模式"
+                >
+                  <LogOut size={20} />
+                </button>
+              </>
             )}
           </div>
         </div>
