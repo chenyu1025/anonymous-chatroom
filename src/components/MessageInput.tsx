@@ -211,31 +211,38 @@ export default function MessageInput({ onSendMessage, disabled, userType }: Mess
       )}
 
       <div className="flex items-end space-x-3">
-        <button
-          onClick={() => setShowTools(!showTools)}
-          className={`p-3 rounded-full transition-colors flex-shrink-0 ${showTools ? 'bg-gray-200' : 'bg-gray-100 text-gray-600'}`}
-          type="button"
-        >
-          {showTools ? <X size={20} /> : <Plus size={20} />}
-        </button>
+        {/* 只有 owner 可以打开工具栏（发送图片/语音） */}
+        {userType === 'owner' && (
+          <button
+            onClick={() => setShowTools(!showTools)}
+            className={`p-3 rounded-full transition-colors flex-shrink-0 ${showTools ? 'bg-gray-200' : 'bg-gray-100 text-gray-600'}`}
+            type="button"
+          >
+            {showTools ? <X size={20} /> : <Plus size={20} />}
+          </button>
+        )}
 
         {showTools ? (
           <div className="flex-1 flex space-x-4 animate-in fade-in slide-in-from-left-5 duration-200 overflow-hidden">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 bg-blue-50 text-blue-600 p-3 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-100 transition-colors whitespace-nowrap"
-              type="button"
-            >
-              <ImageIcon size={20} />
-              <span>图片</span>
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
+            {userType === 'owner' && (
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 bg-blue-50 text-blue-600 p-3 rounded-xl flex items-center justify-center space-x-2 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                  type="button"
+                >
+                  <ImageIcon size={20} />
+                  <span>图片</span>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </>
+            )}
 
             {userType === 'owner' && (
               <button
