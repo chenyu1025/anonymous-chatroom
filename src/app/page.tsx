@@ -430,7 +430,11 @@ export default function ChatRoom() {
       </div>
 
       {/* 输入区域 */}
-      <MessageInput onSendMessage={sendMessage} disabled={!currentUserId} />
+      <MessageInput
+        onSendMessage={sendMessage}
+        disabled={!currentUserId}
+        userType={userType}
+      />
     </div>
   )
 }

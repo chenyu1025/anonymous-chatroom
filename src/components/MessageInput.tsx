@@ -8,9 +8,10 @@ import { AudioRecorder } from '@/lib/audio-recorder'
 interface MessageInputProps {
   onSendMessage: (content: string, type?: 'text' | 'image' | 'audio', fileUrl?: string) => void
   disabled?: boolean
+  userType: 'owner' | 'guest'
 }
 
-export default function MessageInput({ onSendMessage, disabled }: MessageInputProps) {
+export default function MessageInput({ onSendMessage, disabled, userType }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [showTools, setShowTools] = useState(false)
@@ -236,26 +237,39 @@ export default function MessageInput({ onSendMessage, disabled }: MessageInputPr
               onChange={handleImageUpload}
             />
 
-            <button
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={handleMouseLeave}
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
-              onTouchMove={handleTouchMove}
-              className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap ${isRecording
-                ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
-                : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                }`}
-              type="button"
-            >
-              {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
-              <span>
-                {isRecording
-                  ? (isCanceling ? '松开取消' : '松开发送')
-                  : '按住说话'}
-              </span>
-            </button>
+            {userType === 'owner' && (
+              <button
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={(e) => {
+                  // 防止页面滚动和长按菜单
+                  e.preventDefault();
+                  startRecording(e);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  stopRecording();
+                }}
+                onTouchMove={(e) => {
+                  e.preventDefault();
+                  handleTouchMove(e);
+                }}
+                className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap select-none touch-none ${isRecording
+                  ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
+                  : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                  }`}
+                type="button"
+                style={{ WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none' }}
+              >
+                {isRecording ? (isCanceling ? <Trash2 size={20} /> : <Square size={20} />) : <Mic size={20} />}
+                <span>
+                  {isRecording
+                    ? (isCanceling ? '松开取消' : '松开发送')
+                    : '按住说话'}
+                </span>
+              </button>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex-1 flex space-x-3 min-w-0">
