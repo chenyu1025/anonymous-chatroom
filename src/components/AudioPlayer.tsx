@@ -471,10 +471,23 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
 
       {/* 进度条容器 */}
       <div className="flex-1 flex flex-col justify-center h-6 relative group-hover:opacity-100">
-        {/* 时间显示 - 悬浮或拖动或播放时显示在上方 */}
-        <div className={`absolute -top-4 left-0 w-full flex justify-between text-[9px] font-medium transition-opacity duration-200 ${isHovering || isDragging || isPlaying ? 'opacity-100' : 'opacity-0'}`}>
-          <span>{formatTime(currentTime)}</span>
-          <span>{duration ? formatTime(duration) : '--:--'}</span>
+        {/* 时间显示 - 悬浮或拖动或播放或加载时显示在上方 */}
+        <div
+          className={`absolute -top-4 left-0 w-full flex text-[9px] font-medium transition-opacity duration-200 
+            ${isHovering || isDragging || isPlaying || isLoading ? 'opacity-100' : 'opacity-0'}
+            ${isLoading ? 'justify-center' : 'justify-between'}
+          `}
+        >
+          {isLoading ? (
+            <span className="text-gray-500 animate-pulse">
+              加载中... {Math.floor(buffered)}%
+            </span>
+          ) : (
+            <>
+              <span>{formatTime(currentTime)}</span>
+              <span>{duration ? formatTime(duration) : '--:--'}</span>
+            </>
+          )}
         </div>
 
         {/* 进度条轨道 - 增加点击热区 */}
