@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         is_online: true,
         last_seen: new Date().toISOString(),
       }
-      
+
       if (themeId) {
         updates.theme_id = themeId
       }
@@ -88,7 +88,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, user_type, is_online, last_seen')
+      .select('id, user_type, is_online, last_seen, theme_id')
       .eq('is_online', true)
 
     if (error) {

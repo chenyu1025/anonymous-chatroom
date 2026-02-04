@@ -35,6 +35,7 @@ export default function ChatRoom() {
   // 使用 ref 来追踪最新状态，以便在闭包中使用
   const currentThemeIdRef = useRef(DEFAULT_THEME_ID)
   const currentUserUuidRef = useRef('')
+  const ownerIdRef = useRef('')
 
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -93,15 +94,35 @@ export default function ChatRoom() {
           setCurrentUserUuid(data.user.id)
           currentUserUuidRef.current = data.user.id
 
-          if (data.user.theme_id) {
+          // 如果是主人，恢复自己的主题
+          if (type === 'owner' && data.user.theme_id) {
             setCurrentThemeId(data.user.theme_id)
             currentThemeIdRef.current = data.user.theme_id
-            // 同步到本地存储，确保多端同步
             localStorage.setItem('chatroom_theme_id', data.user.theme_id)
           }
         }
       })
       .catch(console.error)
+
+    // 如果是访客，尝试获取当前在线的主人的主题
+    if (type === 'guest') {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          if (data.users && Array.isArray(data.users)) {
+            const owner = data.users.find((u: any) => u.user_type === 'owner')
+            if (owner) {
+              ownerIdRef.current = owner.id
+              if (owner.theme_id) {
+                setCurrentThemeId(owner.theme_id)
+                currentThemeIdRef.current = owner.theme_id
+                localStorage.setItem('chatroom_theme_id', owner.theme_id)
+              }
+            }
+          }
+        })
+        .catch(console.error)
+    }
   }, [])
 
   // 切换主题
@@ -118,6 +139,20 @@ export default function ChatRoom() {
       body: JSON.stringify({
         userType,
         sessionId: currentUserId,
+        themeId
+      })
+    }).catch(console.error)
+
+    // 3. 发送隐藏的系统消息以触发访客的实时同步
+    // 这是为了防止 users 表订阅失败的备份机制
+    fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: `ACTION:THEME_CHANGE:${themeId}`,
+        type: 'text',
+        userType,
+        userId: currentUserId,
         themeId
       })
     }).catch(console.error)
@@ -152,11 +187,21 @@ export default function ChatRoom() {
         const res = await fetch('/api/messages?limit=50')
         const data = await res.json()
         if (data.messages) {
+          // 尝试从历史消息中找到主人的 ID
+          if (!ownerIdRef.current) {
+            const ownerMsg = data.messages.find((m: any) => m.user_type === 'owner')
+            if (ownerMsg) {
+              ownerIdRef.current = ownerMsg.user_id
+            }
+          }
+
           // 处理回复消息可能是数组的情况
-          const formattedMessages = data.messages.map((msg: any) => ({
-            ...msg,
-            reply_to: Array.isArray(msg.reply_to) ? msg.reply_to[0] : msg.reply_to
-          }))
+          const formattedMessages = data.messages
+            .filter((msg: any) => !msg.content || !msg.content.startsWith('ACTION:THEME_CHANGE:'))
+            .map((msg: any) => ({
+              ...msg,
+              reply_to: Array.isArray(msg.reply_to) ? msg.reply_to[0] : msg.reply_to
+            }))
           setMessages(formattedMessages.reverse()) // 翻转以按时间正序显示
           if (data.messages.length < 50) {
             setHasMore(false)
@@ -181,10 +226,52 @@ export default function ChatRoom() {
         (payload: RealtimePostgresChangesPayload<Message>) => {
           const newMessage = payload.new as Message
 
+          // 检查是否为隐藏的主题切换动作
+          if (newMessage.content && newMessage.content.startsWith('ACTION:THEME_CHANGE:')) {
+            const newThemeId = newMessage.content.split(':')[2]
+            const isGuest = localStorage.getItem('chatroom_user_type') !== 'owner'
+
+            // 如果我是访客，且消息来自主人，且有主题ID
+            if (isGuest && newMessage.user_type === 'owner' && newThemeId) {
+              setCurrentThemeId(newThemeId)
+              currentThemeIdRef.current = newThemeId
+              localStorage.setItem('chatroom_theme_id', newThemeId)
+
+              // 更新所有主人消息的主题
+              setMessages(prev => prev.map(msg => {
+                // 只要是主人发的消息，或者是当前发送这条指令的用户
+                if (msg.user_type === 'owner' || msg.user_id === newMessage.user_id) {
+                  return {
+                    ...msg,
+                    users: {
+                      ...(msg.users || { session_id: 'owner' }),
+                      theme_id: newThemeId
+                    }
+                  }
+                }
+                return msg
+              }))
+            }
+            // 不将此指令消息添加到列表中
+            return
+          }
+
           // 如果是自己发的消息，注入当前主题和 session_id
           if (currentUserUuidRef.current && newMessage.user_id === currentUserUuidRef.current) {
             newMessage.users = {
               session_id: currentUserId,
+              theme_id: currentThemeIdRef.current
+            }
+          } else if (newMessage.user_type === 'owner') {
+            // 如果收到主人的新消息，更新 ownerId
+            if (!ownerIdRef.current) {
+              ownerIdRef.current = newMessage.user_id
+            }
+
+            // 如果是主人发的消息（且不是自己），注入当前全局主题（因为访客会同步主人的主题）
+            // 注意：这里无法立即获取 session_id，但对于显示主题来说 theme_id 是关键
+            newMessage.users = {
+              session_id: 'owner', // 占位符
               theme_id: currentThemeIdRef.current
             }
           }
@@ -259,6 +346,31 @@ export default function ChatRoom() {
         (payload: RealtimePostgresChangesPayload<any>) => {
           const newUser = payload.new
           if (newUser && newUser.id && newUser.theme_id) {
+            // 如果更新的是主人，且当前用户是访客，则同步全局主题
+            const isGuest = localStorage.getItem('chatroom_user_type') !== 'owner'
+
+            // 判定是否为 owner 更新：
+            // 1. 明确标记为 owner
+            // 2. 匹配已知的 ownerId
+            // 3. 或者是访客收到非自己的 update 且带有 theme_id (因为只有 owner 能改主题)
+            const isMe = (currentUserUuidRef.current && newUser.id === currentUserUuidRef.current) ||
+              (currentUserId && newUser.session_id === currentUserId)
+
+            const isOwnerUpdate = newUser.user_type === 'owner' ||
+              (ownerIdRef.current && newUser.id === ownerIdRef.current) ||
+              (isGuest && !isMe && newUser.theme_id)
+
+            if (isOwnerUpdate && isGuest) {
+              // 更新 ownerId 引用（如果之前为空）
+              if (!ownerIdRef.current) {
+                ownerIdRef.current = newUser.id
+              }
+
+              setCurrentThemeId(newUser.theme_id)
+              currentThemeIdRef.current = newUser.theme_id
+              localStorage.setItem('chatroom_theme_id', newUser.theme_id)
+            }
+
             // 更新该用户所有历史消息的主题
             setMessages((prev) => prev.map((msg) => {
               if (msg.user_id === newUser.id) {
