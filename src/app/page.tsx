@@ -95,6 +95,21 @@ export default function ChatRoom() {
     // 每 30 秒更新一次在线人数
     const onlineInterval = setInterval(fetchOnlineUsers, 30000)
 
+    // 心跳机制：每 60 秒上报一次在线状态，确保“只浏览不发消息”的用户也被算作在线
+    const heartbeatInterval = setInterval(() => {
+      if (sessionId) {
+        fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userType: type,
+            sessionId: sessionId,
+            // 不传 themeId，避免覆盖可能已更新的主题，仅更新 last_seen
+          })
+        }).catch(err => console.error('Heartbeat failed:', err))
+      }
+    }, 60000)
+
     // 尝试从本地存储恢复主题
     const savedThemeId = localStorage.getItem('chatroom_theme_id')
     if (savedThemeId) {
@@ -187,6 +202,7 @@ export default function ChatRoom() {
 
     return () => {
       clearInterval(onlineInterval)
+      clearInterval(heartbeatInterval)
     }
   }, [])
 
