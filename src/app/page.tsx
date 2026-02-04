@@ -11,7 +11,7 @@ import { Users, Settings, X, Palette, LogOut, ChevronDown } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID, OWNER_THEMES } from '@/lib/themes'
-import BackgroundParticles from '@/components/BackgroundParticles'
+// import BackgroundParticles from '@/components/BackgroundParticles' // 暂时移除以优化性能
 import ClickSparkles from '@/components/ClickSparkles'
 import FluidCursorTrail from '@/components/FluidCursorTrail'
 import { soundManager } from '@/lib/sound'
@@ -742,7 +742,7 @@ export default function ChatRoom() {
         animation: 'gradient 15s ease infinite'
       }}
     >
-      <BackgroundParticles />
+      {/* <BackgroundParticles /> */}
       <ClickSparkles />
       <FluidCursorTrail />
       <FullScreenEffects type={fullScreenEffect} onComplete={() => setFullScreenEffect('none')} />
