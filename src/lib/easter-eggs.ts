@@ -97,11 +97,11 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     dateExclusive: { month: 2, day: 25 } // 仅在 3月25日生效 (月份从0开始)
   },
   {
-    // 11. 复古街机 -> 8bit/pixel
-    keywords: ['8bit', 'pixel', 'arcade', '复古', '街机', '像素'],
+    // 11. 1997 (复古街机 -> 掉书)
+    keywords: ['1997', '一九九七', '九七', 'book', 'reading'],
     effect: 'confetti',
     fullScreen: 'retro-arcade',
-    emoji: '👾'
+    emoji: '📚'
   }
 ]
 

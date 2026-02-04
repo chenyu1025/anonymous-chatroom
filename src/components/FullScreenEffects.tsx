@@ -367,8 +367,8 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
 }
 
 /* --------------------------------------------------------------------------------
-   11. Retro Arcade (像素复古街机)
-   - CRT 扫描线 + 像素字体 + 俄罗斯方块掉落 + 吃豆人
+   11. Retro Arcade (1997 - 书籍雨)
+   - CRT 扫描线 + 像素字体 + 书籍掉落堆叠
 -------------------------------------------------------------------------------- */
 const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
   const sceneRef = useRef<HTMLDivElement>(null)
@@ -387,7 +387,7 @@ const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
       MouseConstraint = Matter.MouseConstraint
 
     const engine = Engine.create()
-    engine.gravity.y = 0.5 // Slower gravity for Tetris feel
+    engine.gravity.y = 1 // Normal gravity for books
     engineRef.current = engine
 
     const width = window.innerWidth
@@ -405,90 +405,59 @@ const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
       }
     })
 
-    // 2. Create Tetris Blocks
-    const tetrisBlocks = []
-    const colors = ['#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'] // Classic Tetris colors
-
-    // Helper to create block parts
-    const createBlock = (x: number, y: number, type: number, color: string) => {
-      const size = 30
-      const options = {
-        restitution: 0.2,
-        friction: 0.5,
-        render: {
-          fillStyle: color,
-          strokeStyle: 'rgba(0,0,0,0.5)',
-          lineWidth: 2
-        }
-      }
-
-      // Simple shapes constructed from rectangles
-      switch (type) {
-        case 0: // I
-          return Bodies.rectangle(x, y, size * 4, size, options)
-        case 1: // O
-          return Bodies.rectangle(x, y, size * 2, size * 2, options)
-        case 2: // T
-          return Bodies.fromVertices(x, y, [[
-            { x: 0, y: 0 }, { x: size * 3, y: 0 },
-            { x: size * 3, y: size }, { x: size * 2, y: size },
-            { x: size * 2, y: size * 2 }, { x: size, y: size * 2 },
-            { x: size, y: size }, { x: 0, y: size }
-          ]], options)
-        case 3: // L
-          return Bodies.fromVertices(x, y, [[
-            { x: 0, y: 0 }, { x: size, y: 0 },
-            { x: size, y: size * 3 }, { x: -size, y: size * 3 },
-            { x: -size, y: size * 2 }, { x: 0, y: size * 2 }
-          ]], options)
-        default: // Box default
-          return Bodies.rectangle(x, y, size, size, options)
-      }
-    }
+    // 2. Create Books
+    const books: Matter.Body[] = []
+    const bookColors = [
+      '#8B4513', // SaddleBrown
+      '#2F4F4F', // DarkSlateGray
+      '#556B2F', // DarkOliveGreen
+      '#800000', // Maroon
+      '#191970', // MidnightBlue
+      '#4B0082', // Indigo
+      '#A0522D'  // Sienna
+    ]
 
     // Spawn loop
     const runner = Runner.create()
     let frameCount = 0
-    const maxBlocks = 40
+    const maxBooks = 50
 
     Matter.Events.on(runner, 'afterUpdate', () => {
       frameCount++
-      if (frameCount % 20 === 0 && tetrisBlocks.length < maxBlocks) { // Spawn every 20 frames
-        const type = Math.floor(Math.random() * 5)
-        const color = colors[Math.floor(Math.random() * colors.length)]
+      if (frameCount % 15 === 0 && books.length < maxBooks) { // Spawn every 15 frames
         const x = Math.random() * (width - 100) + 50
 
-        // For simplicity using rectangles for all physics to avoid concave hull issues with 'fromVertices' without decomposition
-        // Using visual approximation: just rectangles and squares
-        let block
-        const size = 30
-        if (type === 0) block = Bodies.rectangle(x, -50, size * 4, size, { ...options(color) }) // I
-        else if (type === 1) block = Bodies.rectangle(x, -50, size * 2, size * 2, { ...options(color) }) // O
-        else if (type === 2) block = Bodies.rectangle(x, -50, size * 3, size, { ...options(color) }) // L-ish (simplified)
-        else block = Bodies.rectangle(x, -50, size, size, { ...options(color) }) // Dot
+        // Book dimensions (varied)
+        const bookWidth = Math.random() * 20 + 40 // 40-60px width
+        const bookHeight = Math.random() * 10 + 60 // 60-70px height (spine length)
+        const color = bookColors[Math.floor(Math.random() * bookColors.length)]
 
-        Matter.Body.setAngle(block, Math.floor(Math.random() * 4) * (Math.PI / 2)) // 90 deg rotations
+        const book = Bodies.rectangle(x, -50, bookWidth, bookHeight, {
+          restitution: 0.1, // Low bounce
+          friction: 0.8,    // High friction to stack
+          frictionAir: 0.02,
+          angle: Math.random() * Math.PI * 2,
+          render: {
+            fillStyle: color,
+            strokeStyle: '#e2e8f0', // Light border like pages
+            lineWidth: 2
+          }
+        })
 
-        tetrisBlocks.push(block)
-        Composite.add(engine.world, block)
-      }
-    })
-
-    const options = (color: string) => ({
-      restitution: 0.1,
-      friction: 0.8, // High friction to stack
-      render: {
-        fillStyle: color,
-        strokeStyle: 'black',
-        lineWidth: 3
+        books.push(book)
+        Composite.add(engine.world, book)
       }
     })
 
     // 3. Walls
+    const wallThickness = 100
+    const hugeSize = 10000
     const wallOptions = { isStatic: true, render: { visible: false } }
-    const floor = Bodies.rectangle(width / 2, height + 50, width, 100, wallOptions)
-    const leftWall = Bodies.rectangle(-50, height / 2, 100, height, wallOptions)
-    const rightWall = Bodies.rectangle(width + 50, height / 2, 100, height, wallOptions)
+
+    const floor = Bodies.rectangle(width / 2, height + wallThickness / 2, hugeSize, wallThickness, wallOptions)
+    const leftWall = Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, hugeSize, wallOptions)
+    const rightWall = Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, hugeSize, wallOptions)
+
     Composite.add(engine.world, [floor, leftWall, rightWall])
 
     // 4. Mouse
@@ -500,11 +469,27 @@ const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
     Composite.add(engine.world, mouseConstraint)
     render.mouse = mouse
 
+    // Resize Handler
+    const handleResize = () => {
+      const newWidth = window.innerWidth
+      const newHeight = window.innerHeight
+
+      render.canvas.width = newWidth
+      render.canvas.height = newHeight
+
+      // Update wall positions
+      Matter.Body.setPosition(floor, { x: newWidth / 2, y: newHeight + wallThickness / 2 })
+      Matter.Body.setPosition(rightWall, { x: newWidth + wallThickness / 2, y: newHeight / 2 })
+      Matter.Body.setPosition(leftWall, { x: -wallThickness / 2, y: newHeight / 2 })
+    }
+    window.addEventListener('resize', handleResize)
+
     // 5. Run
     Render.run(render)
     Runner.run(runner, engine)
 
     return () => {
+      window.removeEventListener('resize', handleResize)
       Render.stop(render)
       Runner.stop(runner)
       if (render.canvas) render.canvas.remove()
@@ -514,60 +499,37 @@ const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 font-mono pointer-events-auto overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-black/80 font-mono pointer-events-auto overflow-hidden touch-none">
       {/* CRT Scanline Filter */}
-      <div className="absolute inset-0 z-[105] pointer-events-none mix-blend-overlay opacity-50"
+      <div className="absolute inset-0 z-[105] pointer-events-none mix-blend-overlay opacity-30"
         style={{
           background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
           backgroundSize: '100% 4px, 6px 100%'
         }}
       />
 
-      {/* Glitch Overlay */}
-      <div className="absolute inset-0 z-[104] pointer-events-none animate-pulse opacity-10 bg-green-900 mix-blend-screen" />
-
       {/* Physics Canvas */}
       <div ref={sceneRef} className="absolute inset-0 z-[101]" />
 
       {/* Retro UI */}
       <div className="absolute top-10 left-0 right-0 text-center pointer-events-none z-[110]">
-        <h1 className="text-4xl md:text-6xl text-[#0f0] font-black tracking-widest animate-glitch-text"
-          style={{ textShadow: '2px 2px 0px #f0f, -2px -2px 0px #0ff', fontFamily: '"Courier New", monospace' }}>
-          INSERT COIN
+        <h1 className="text-2xl sm:text-4xl md:text-6xl text-amber-500 font-black tracking-widest animate-pulse px-4"
+          style={{ textShadow: '2px 2px 0px #8b4513', fontFamily: '"Courier New", monospace' }}>
+          1997 LIBRARY
         </h1>
-        <p className="text-[#0f0] mt-4 text-xl blink">PRESS START TO CONTINUE</p>
-      </div>
-
-      {/* Pac-Man Animation */}
-      <div className="absolute bottom-20 left-[-100px] z-[102] animate-pacman-run">
-        <div className="w-12 h-12 bg-yellow-400 rounded-full relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-full h-1/2 bg-black animate-pacman-chomp-top origin-bottom-right" />
-          <div className="absolute bottom-0 right-0 w-full h-1/2 bg-black animate-pacman-chomp-bottom origin-top-right" />
-        </div>
+        <p className="text-amber-200/80 mt-2 sm:mt-4 text-sm sm:text-xl blink">Reading in progress...</p>
       </div>
 
       <button
         onClick={onComplete}
-        className="absolute top-10 right-10 z-[120] text-[#0f0] border-2 border-[#0f0] px-4 py-2 hover:bg-[#0f0] hover:text-black transition-colors font-bold tracking-widest"
+        className="absolute top-10 right-6 sm:right-10 z-[120] text-amber-500 border-2 border-amber-500 p-2 sm:px-4 sm:py-2 hover:bg-amber-500 hover:text-black transition-colors font-bold tracking-widest bg-black/50"
         style={{ fontFamily: '"Courier New", monospace' }}
       >
-        [X] EXIT
+        [X] CLOSE
       </button>
 
       {/* Inline Styles for Keyframes */}
       <style jsx>{`
-        @keyframes pacman-run {
-          0% { left: -100px; }
-          100% { left: 100vw; }
-        }
-        @keyframes pacman-chomp-top {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(-45deg); }
-        }
-        @keyframes pacman-chomp-bottom {
-          0%, 100% { transform: rotate(0deg); }
-          50% { transform: rotate(45deg); }
-        }
         .blink { animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
       `}</style>
