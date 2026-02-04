@@ -143,12 +143,20 @@ const EmojiStorm = ({ emoji = '❤️', onComplete }: { emoji?: string, onComple
     Composite.add(engine.world, mouseConstraint)
     render.mouse = mouse
 
+    // Resize handler
+    const handleResize = () => {
+      render.canvas.width = window.innerWidth
+      render.canvas.height = window.innerHeight
+    }
+    window.addEventListener('resize', handleResize)
+
     // 4. Run
     Render.run(render)
     Runner.run(runner, engine)
 
     // Cleanup
     return () => {
+      window.removeEventListener('resize', handleResize)
       Render.stop(render)
       Runner.stop(runner)
       if (render.canvas) render.canvas.remove()
@@ -158,29 +166,31 @@ const EmojiStorm = ({ emoji = '❤️', onComplete }: { emoji?: string, onComple
   }, [emoji])
 
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-auto">
+    <div className="fixed inset-0 z-[100] pointer-events-auto touch-none">
       <div ref={sceneRef} className="absolute inset-0" />
 
-      {/* Score UI */}
-      <div className="absolute top-10 right-10 pointer-events-none animate-bounce">
-        <div className="bg-white/90 backdrop-blur rounded-full px-6 py-3 shadow-xl border-4 border-purple-200">
-          <span className="text-3xl font-black text-purple-600 font-mono">
+      {/* Score UI - Adjusted for mobile */}
+      <div className="absolute top-10 right-6 sm:right-10 pointer-events-none animate-bounce z-[102]">
+        <div className="bg-white/90 backdrop-blur rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-xl border-4 border-purple-200 flex items-center">
+          <span className="text-2xl sm:text-3xl font-black text-purple-600 font-mono">
             {score}
           </span>
-          <span className="ml-2 text-sm font-bold text-gray-500 uppercase tracking-wider">
+          <span className="ml-2 text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider">
             COMBO
           </span>
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="absolute bottom-20 left-0 right-0 text-center pointer-events-none opacity-80 animate-pulse">
-        <p className="text-white font-bold text-xl drop-shadow-lg">TAP TO POP!</p>
+      {/* Instructions - Higher up for mobile */}
+      <div className="absolute bottom-32 left-0 right-0 text-center pointer-events-none opacity-80 animate-pulse z-[102]">
+        <p className="text-white font-bold text-lg sm:text-xl drop-shadow-lg px-4">
+          TAP EMOJIS TO POP!
+        </p>
       </div>
 
       <button
         onClick={onComplete}
-        className="absolute top-10 left-10 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-[101]"
+        className="absolute top-10 left-6 sm:left-10 bg-black/30 hover:bg-black/50 text-white p-3 sm:p-2 rounded-full transition-colors z-[101]"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
@@ -273,13 +283,17 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
     }
 
     // 3. Walls (to keep phones inside)
+    // Make walls very large to handle resize without scaling
+    const wallThickness = 100
+    const hugeSize = 10000
     const wallOptions = { isStatic: true, render: { visible: false } }
-    const walls = [
-      Bodies.rectangle(width / 2, -50, width, 100, wallOptions), // Top
-      Bodies.rectangle(width / 2, height + 50, width, 100, wallOptions), // Bottom
-      Bodies.rectangle(width + 50, height / 2, 100, height, wallOptions), // Right
-      Bodies.rectangle(-50, height / 2, 100, height, wallOptions) // Left
-    ]
+
+    const wallTop = Bodies.rectangle(width / 2, -wallThickness / 2, hugeSize, wallThickness, wallOptions)
+    const wallBottom = Bodies.rectangle(width / 2, height + wallThickness / 2, hugeSize, wallThickness, wallOptions)
+    const wallRight = Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, hugeSize, wallOptions)
+    const wallLeft = Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, hugeSize, wallOptions)
+
+    const walls = [wallTop, wallBottom, wallRight, wallLeft]
 
     Composite.add(engine.world, [...phones, ...walls])
 
@@ -295,6 +309,22 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
     Composite.add(engine.world, mouseConstraint)
     render.mouse = mouse
 
+    // Resize Handler
+    const handleResize = () => {
+      const newWidth = window.innerWidth
+      const newHeight = window.innerHeight
+
+      render.canvas.width = newWidth
+      render.canvas.height = newHeight
+
+      // Update wall positions
+      Matter.Body.setPosition(wallTop, { x: newWidth / 2, y: -wallThickness / 2 })
+      Matter.Body.setPosition(wallBottom, { x: newWidth / 2, y: newHeight + wallThickness / 2 })
+      Matter.Body.setPosition(wallRight, { x: newWidth + wallThickness / 2, y: newHeight / 2 })
+      Matter.Body.setPosition(wallLeft, { x: -wallThickness / 2, y: newHeight / 2 })
+    }
+    window.addEventListener('resize', handleResize)
+
     // 5. Run
     Render.run(render)
     const runner = Runner.create()
@@ -303,6 +333,7 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
 
     // Cleanup
     return () => {
+      window.removeEventListener('resize', handleResize)
       Render.stop(render)
       Runner.stop(runner)
       if (render.canvas) render.canvas.remove()
@@ -312,20 +343,20 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white/30 backdrop-blur-sm animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[100] bg-white/30 backdrop-blur-sm animate-in fade-in duration-500 touch-none">
       <div ref={sceneRef} className="absolute inset-0" />
 
       {/* Instructions & Exit */}
       <div className="absolute top-20 left-0 right-0 text-center pointer-events-none">
-        <h2 className="text-3xl font-bold text-slate-800 drop-shadow-md animate-bounce">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 drop-shadow-md animate-bounce px-4">
           OOPS! MY PHONE!
         </h2>
-        <p className="text-slate-600 font-medium mt-2">Catch the flying phones!</p>
+        <p className="text-slate-600 font-medium mt-2 text-sm sm:text-base">Catch the flying phones!</p>
       </div>
 
       <button
         onClick={onComplete}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform active:scale-95 z-[101]"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform active:scale-95 z-[101] whitespace-nowrap"
       >
         落地 (Land)
       </button>
