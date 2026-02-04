@@ -27,7 +27,7 @@ export interface EasterEggConfig {
 export const EASTER_EGGS: EasterEggConfig[] = [
   {
     // 1. 《捡手机》 -> 零重力手机漂浮
-    keywords: ['捡手机', 'zero gravity', '漂浮', '失重', 'fly', '零重力'],
+    keywords: ['捡手机'],
     effect: 'glow',
     fullScreen: 'zero-gravity',
     emoji: '📱'
@@ -56,7 +56,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
   },
   {
     // 5. 《旧梦遗抄》 -> 水墨禅意
-    keywords: ['旧梦遗抄', '旧梦', 'ink', '水墨', 'zen', 'flow'],
+    keywords: ['旧梦遗抄', '旧梦'],
     effect: 'rain',
     fullScreen: 'ink-flow',
     emoji: '✒️'
@@ -83,7 +83,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
   },
   {
     // 9. 魔法师 -> 魔法师剪影
-    keywords: ['魔法师', 'wizard', 'Wizard'],
+    keywords: ['魔法师', '5376'],
     effect: 'wizard-shadow',
     fullScreen: 'none'
   },
@@ -98,7 +98,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
   },
   {
     // 11. 1997 (复古街机 -> 掉书)
-    keywords: ['1997', '一九九七', '九七', 'book', 'reading'],
+    keywords: ['1997', '一九九七', '九七', '实体', '出本'],
     effect: 'confetti',
     fullScreen: 'retro-arcade',
     emoji: '📚'
