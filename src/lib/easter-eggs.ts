@@ -18,6 +18,7 @@ export interface EasterEggConfig {
   keywords: string[]
   effect: EasterEggEffect
   fullScreen?: FullScreenEffectType
+  bubbleStyle?: 'ancient-paper' | 'cyber-glitch' | 'dreamy-pastel' | 'gothic-dark' | 'neon-night' | 'burnt-ash' | 'ocean-deep' | 'magical-gold' | 'party-pop' | 'retro-pixel'
   color?: string
   emoji?: string
   dateExclusive?: { month: number; day: number } // 可选：指定生效日期
@@ -30,14 +31,16 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['捡手机'],
     effect: 'glow',
     fullScreen: 'zero-gravity',
+    // bubbleStyle: 'cyber-glitch',
     emoji: '📱'
   },
   {
     // 2. 《只有一件事是重要的》 -> 赛博故障+警灯色调
-    keywords: ['只有一件事是重要的', 'w警'],
+    keywords: ['只有一件事是重要的', 'w警', 'w 警', 'W警', 'W 警'],
     effect: 'glow',
     color: '#3b82f6',
     fullScreen: 'police-glitch',
+    // bubbleStyle: 'cyber-glitch',
     emoji: '🚨'
   },
   {
@@ -45,6 +48,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['亲爱的玛利亚', '玛利亚'],
     effect: 'confetti',
     fullScreen: 'city-dream',
+    bubbleStyle: 'dreamy-pastel',
     emoji: '🪶'
   },
   {
@@ -52,20 +56,22 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['奇妙夏日', '奇夏'],
     effect: 'rain',
     fullScreen: 'gothic-fog',
+    bubbleStyle: 'gothic-dark',
     // emoji: '🦇' // 用户要求文字上不要蝙蝠
   },
   {
-    // 5. 《旧梦遗抄》 -> 水墨禅意
+    // 5. 《旧梦遗抄》 -> 水墨禅意 + 古代烂纸气泡
     keywords: ['旧梦遗抄', '旧梦'],
     effect: 'rain',
-    fullScreen: 'ink-flow',
-    emoji: '✒️'
+    // fullScreen: 'ink-flow',
+    bubbleStyle: 'ancient-paper'
   },
   {
     // 6. 《夜间规则》 -> 聚光灯
     keywords: ['夜间规则', '夜规'],
     effect: 'love',
     fullScreen: 'star-paparazzi',
+    bubbleStyle: 'neon-night',
     // emoji: '💎' // 移除钻石
   },
   {
@@ -73,19 +79,22 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['野孩子'],
     effect: 'fire',
     fullScreen: 'apocalypse-ash',
+    // bubbleStyle: 'burnt-ash',
     emoji: '🔥'
   },
   {
     // 8. Shark -> 掠食者之影 (鲨鱼鳍倒影)
     keywords: ['shark', 'Shark'],
     effect: 'shark-shadow',
-    fullScreen: 'none'
+    fullScreen: 'none',
+    // bubbleStyle: 'ocean-deep'
   },
   {
     // 9. 魔法师 -> 魔法师剪影
     keywords: ['魔法师', '5376'],
     effect: 'wizard-shadow',
-    fullScreen: 'none'
+    fullScreen: 'none',
+    // bubbleStyle: 'magical-gold'
   },
   {
     // 10. 生日彩蛋 -> 3.25 全屏庆典
@@ -93,6 +102,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     effect: 'glow',
     color: '#FFD700', // 金色
     fullScreen: 'birthday-starlight',
+    bubbleStyle: 'party-pop',
     emoji: '🌟',
     dateExclusive: { month: 2, day: 25 } // 仅在 3月25日生效 (月份从0开始)
   },
@@ -101,6 +111,7 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     keywords: ['1997', '一九九七', '九七', '实体', '出本'],
     effect: 'confetti',
     fullScreen: 'retro-arcade',
+    // bubbleStyle: 'retro-pixel',
     emoji: '📚'
   }
 ]

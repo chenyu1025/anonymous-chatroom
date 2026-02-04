@@ -84,6 +84,137 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
       if (easterEgg.effect === 'shake') baseStyles += ' animate-shake'
       if (easterEgg.effect === 'glow') baseStyles += ' animate-glow'
       if (easterEgg.effect === 'fire') baseStyles += ' animate-fire'
+
+      // 特殊气泡样式覆盖
+      switch (easterEgg.bubbleStyle) {
+        case 'ancient-paper':
+          baseStyles = `
+            !bg-[#e6dcc3] 
+            !text-[#5c4a35] 
+            !border-[#8c7853]/50 
+            !border-2 
+            !border-dashed 
+            !shadow-[2px_2px_4px_rgba(0,0,0,0.1),inset_0_0_20px_rgba(139,69,19,0.1)]
+            font-serif 
+            backdrop-blur-none
+            rounded-md
+            transform rotate-[-1deg]
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'cyber-glitch':
+          baseStyles = `
+            !bg-black 
+            !text-[#00ff00] 
+            !border-[#ff00ff] 
+            !border 
+            !shadow-[0_0_5px_#ff00ff,0_0_10px_#00ff00]
+            font-mono 
+            backdrop-blur-none
+            rounded-none
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'dreamy-pastel':
+          baseStyles = `
+            !bg-gradient-to-br !from-pink-100 !via-purple-100 !to-blue-100
+            !text-purple-900
+            !border-white/60 
+            !border
+            !shadow-[0_4px_15px_rgba(236,72,153,0.15)]
+            backdrop-blur-none
+            !rounded-[24px]
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'gothic-dark':
+          baseStyles = `
+            !bg-[#1a161f] 
+            !text-[#d4d4d8] 
+            !border-[#581c87] 
+            !border
+            !shadow-[0_0_20px_rgba(88,28,135,0.2)]
+            font-serif 
+            backdrop-blur-none
+            rounded-xl
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'neon-night':
+          baseStyles = `
+            !bg-[#09090b]
+            !text-cyan-400
+            !border-cyan-500
+            !border
+            !shadow-[0_0_10px_rgba(6,182,212,0.4),inset_0_0_10px_rgba(6,182,212,0.1)]
+            backdrop-blur-none
+            rounded-lg
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'burnt-ash':
+          baseStyles = `
+            !bg-gradient-to-b !from-[#292524] !to-[#451a03]
+            !text-orange-100
+            !border-orange-900/50
+            !border
+            !shadow-[0_4px_15px_rgba(0,0,0,0.5)]
+            backdrop-blur-none
+            rounded-lg
+            border-b-4 !border-b-orange-900
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'ocean-deep':
+          baseStyles = `
+            !bg-gradient-to-b !from-[#1e3a8a] !to-[#172554]
+            !text-blue-100
+            !border-blue-400/30
+            !border
+            !shadow-[inset_0_0_20px_rgba(0,0,0,0.3)]
+            backdrop-blur-none
+            rounded-2xl !rounded-tr-none
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'magical-gold':
+          baseStyles = `
+            !bg-[#2e1065]
+            !text-yellow-100
+            !border-yellow-500/50
+            !border
+            !shadow-[0_0_15px_rgba(234,179,8,0.2)]
+            font-serif
+            backdrop-blur-none
+            rounded-xl
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'party-pop':
+          baseStyles = `
+            !bg-gradient-to-r !from-yellow-100 !to-pink-100
+            !text-pink-600
+            !border-yellow-400
+            !border-2 !border-dotted
+            !shadow-md
+            backdrop-blur-none
+            rounded-full px-6
+          `.replace(/\s+/g, ' ')
+          break
+
+        case 'retro-pixel':
+          baseStyles = `
+            !bg-[#16a34a]
+            !text-black
+            !border-black
+            !border-4
+            !shadow-[4px_4px_0px_rgba(0,0,0,1)]
+            font-mono
+            !rounded-none
+            tracking-tighter
+          `.replace(/\s+/g, ' ')
+          break
+      }
     }
 
     return baseStyles
