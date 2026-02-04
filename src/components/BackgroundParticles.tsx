@@ -10,7 +10,7 @@ export default function BackgroundParticles() {
   useEffect(() => {
     const updateGradient = () => {
       const hour = new Date().getHours()
-      
+
       // 0-5: 深夜/凌晨 (深紫 - 深蓝)
       if (hour >= 0 && hour < 6) {
         setGradientColors(['#2d1b4e', '#1a2a6c'])
@@ -93,9 +93,13 @@ export default function BackgroundParticles() {
       }
     }
 
-    const particles: Particle[] = []
-    const particleCount = Math.min(50, Math.floor(width / 20)) // 根据屏幕宽度控制数量
+    // 降低粒子数量和更新频率以优化性能
+    const isMobile = width < 768
+    // 桌面端最多 40 个，移动端最多 15 个，显著减少计算量
+    const maxParticles = isMobile ? 15 : 40
+    const particleCount = Math.min(maxParticles, Math.floor(width / 30))
 
+    const particles: Particle[] = []
     for (let i = 0; i < particleCount; i++) {
       particles.push(new Particle())
     }
@@ -105,7 +109,9 @@ export default function BackgroundParticles() {
     const animate = () => {
       if (!ctx) return
       ctx.clearRect(0, 0, width, height)
-      
+
+      // 优化：使用 requestAnimationFrame 但可以考虑隔帧渲染（如果极度卡顿），
+      // 目前先通过减少粒子数来优化
       particles.forEach(p => {
         p.update()
         p.draw()
@@ -133,7 +139,7 @@ export default function BackgroundParticles() {
 
   return (
     <>
-      <div 
+      <div
         className="fixed inset-0 z-[-1] transition-colors duration-[5000ms] ease-in-out"
         style={{
           background: `linear-gradient(135deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 100%)`
