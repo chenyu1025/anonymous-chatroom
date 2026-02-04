@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
           user_type: userType || 'guest',
           is_online: true,
           last_seen: new Date().toISOString(),
+          theme_id: themeId || undefined
         }
       ])
       .select()

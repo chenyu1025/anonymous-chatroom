@@ -101,11 +101,21 @@ export default function ChatRoom() {
 
           // 如果是主人，优先使用本地存储的主题（用户的主动选择），其次才是数据库主题
           if (type === 'owner') {
-            // 如果本地有保存的主题，且与数据库不一致，则以本地为准（可能是上次切换后还没同步完，或者数据库延迟）
-            // 但为了保险，通常还是以数据库为准？不，用户体验优先。
-            // 这里逻辑修改：如果本地有，就用本地的；如果本地没有，再用数据库的。
+            // 如果本地有保存的主题
             if (savedThemeId) {
-              // 本地已经设置了，不需要做任何事，保持 useEffect 初始逻辑
+              // 如果数据库中的主题与本地不一致，主动同步一次到服务器，确保访客看到正确的主题
+              if (data.user.theme_id !== savedThemeId) {
+                console.log('Syncing local theme to server:', savedThemeId)
+                fetch('/api/users', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userType: type,
+                    sessionId: sessionId,
+                    themeId: savedThemeId
+                  })
+                }).catch(console.error)
+              }
             } else if (data.user.theme_id) {
               // 本地没有（比如清缓存了），才用数据库的
               setCurrentThemeId(data.user.theme_id)
@@ -143,6 +153,10 @@ export default function ChatRoom() {
                 currentThemeIdRef.current = owner.theme_id
                 localStorage.setItem('chatroom_theme_id', owner.theme_id)
               }
+            } else {
+              // 如果没找到在线主人，尝试从历史消息中恢复 Owner ID，或者保持当前本地主题
+              // 不做任何回退操作，防止变回默认
+              console.log('No online owner found, keeping local theme')
             }
           }
         })
