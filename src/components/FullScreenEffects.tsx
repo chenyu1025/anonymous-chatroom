@@ -735,15 +735,15 @@ const GothicFog = () => (
 
 /* --------------------------------------------------------------------------------
    5. Ink Flow (水墨禅意 - 旧梦)
-   - 黑白灰阶 + 水墨晕染 + 动态波纹
+   - 水墨山水画背景 (SVG 绘制) + 动态墨滴
    - 优化：使用 CSS Noise 替代 SVG feTurbulence 以提升移动端性能
 -------------------------------------------------------------------------------- */
 const InkFlow = () => (
-  <div className="absolute inset-0 pointer-events-none overflow-hidden bg-[#f4e4bc]/30 animate-in fade-in duration-1000">
+  <div className="absolute inset-0 pointer-events-none overflow-hidden bg-[#f4e4bc]/10 animate-in fade-in duration-1000">
     {/* 古书滤镜：使用 sepia 营造陈旧感，叠加暖褐色遮罩 */}
-    <div className="absolute inset-0 backdrop-sepia-[0.8] backdrop-contrast-[0.9] bg-[#8b5a2b]/10 mix-blend-color-burn" />
+    <div className="absolute inset-0 backdrop-sepia-[0.3] backdrop-contrast-[0.95] bg-[#8b5a2b]/5 mix-blend-color-burn z-[1]" />
 
-    {/* SVG Filter for Gooey/Ink effect ONLY (Removed heavy paper texture filter) */}
+    {/* SVG Filter for Gooey/Ink effect ONLY */}
     <svg className="hidden">
       <defs>
         <filter id="ink-spread">
@@ -756,28 +756,56 @@ const InkFlow = () => (
           />
           <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
+        {/* 笔触纹理滤镜 */}
+        <filter id="brush-stroke">
+          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+        </filter>
       </defs>
     </svg>
 
     {/* 纸张纹理叠加 - 使用 CSS 噪点替代 SVG 滤镜 */}
     <div
-      className="absolute inset-0 opacity-10 mix-blend-multiply"
+      className="absolute inset-0 opacity-10 mix-blend-multiply z-[2]"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`,
         backgroundSize: '150px 150px'
       }}
     />
 
-    {/* 墨滴扩散 */}
-    <div className="absolute inset-0" style={{ filter: 'url(#ink-spread)' }}>
-      {Array.from({ length: 8 }).map((_, i) => (
+    {/* 水墨山水背景层 */}
+    <div className="absolute inset-0 z-[0] opacity-30">
+      {/* 远山 (淡墨) */}
+      <svg className="absolute bottom-0 w-full h-[50%] text-gray-400/20" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 100 L0 50 C 20 60 40 30 60 50 C 80 70 90 40 100 60 L 100 100 Z" fill="currentColor" style={{ filter: 'url(#brush-stroke)' }} />
+      </svg>
+
+      {/* 中景山 (中墨) */}
+      <svg className="absolute bottom-0 w-full h-[40%] text-gray-600/30" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 100 L0 70 C 30 50 50 80 70 60 C 80 50 90 80 100 70 L 100 100 Z" fill="currentColor" style={{ filter: 'url(#brush-stroke)' }} />
+      </svg>
+
+      {/* 近景山 (浓墨) */}
+      <svg className="absolute bottom-0 w-full h-[25%] text-gray-800/40" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0 100 L0 80 C 15 70 30 90 50 80 C 70 70 85 90 100 80 L 100 100 Z" fill="currentColor" style={{ filter: 'url(#brush-stroke)' }} />
+      </svg>
+
+      {/* 孤舟/飞鸟点缀 */}
+      <div className="absolute top-[30%] right-[20%] text-black/40 opacity-50 text-4xl animate-float-slow">
+        〰️ 🛶
+      </div>
+    </div>
+
+    {/* 动态墨滴扩散 (前景) */}
+    <div className="absolute inset-0 z-[3]" style={{ filter: 'url(#ink-spread)' }}>
+      {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={`ink-${i}`}
-          className="absolute rounded-full bg-black/80 animate-ink-spread"
+          className="absolute rounded-full bg-black/70 animate-ink-spread"
           style={{
             left: `${Math.random() * 80 + 10}%`,
             top: `${Math.random() * 80 + 10}%`,
-            width: 'clamp(60px, 15vw, 120px)', // 响应式尺寸
+            width: 'clamp(60px, 15vw, 120px)',
             height: 'clamp(60px, 15vw, 120px)',
             animationDuration: `${Math.random() * 4 + 4}s`,
             animationDelay: `${Math.random() * 2}s`,
@@ -788,18 +816,18 @@ const InkFlow = () => (
       ))}
 
       {/* 烟雾/墨流 */}
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={`flow-${i}`}
-          className="absolute bg-gray-800/20 blur-xl animate-smoke-flow"
+          className="absolute bg-gray-900/10 blur-xl animate-smoke-flow"
           style={{
             left: '-20%',
-            top: `${Math.random() * 100}%`,
+            top: `${Math.random() * 60 + 20}%`,
             width: '140%',
-            height: 'clamp(60px, 10vh, 120px)', // 响应式高度
+            height: 'clamp(40px, 8vh, 80px)',
             animationDuration: `${Math.random() * 10 + 10}s`,
             animationDelay: `${Math.random() * 5}s`,
-            transform: 'rotate(-10deg)'
+            transform: 'rotate(-5deg)'
           }}
         />
       ))}
