@@ -367,6 +367,215 @@ const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
 }
 
 /* --------------------------------------------------------------------------------
+   11. Retro Arcade (像素复古街机)
+   - CRT 扫描线 + 像素字体 + 俄罗斯方块掉落 + 吃豆人
+-------------------------------------------------------------------------------- */
+const RetroArcade = ({ onComplete }: { onComplete: () => void }) => {
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const engineRef = useRef<Matter.Engine | null>(null)
+
+  useEffect(() => {
+    if (!sceneRef.current) return
+
+    // 1. Setup Matter.js
+    const Engine = Matter.Engine,
+      Render = Matter.Render,
+      Runner = Matter.Runner,
+      Bodies = Matter.Bodies,
+      Composite = Matter.Composite,
+      Mouse = Matter.Mouse,
+      MouseConstraint = Matter.MouseConstraint
+
+    const engine = Engine.create()
+    engine.gravity.y = 0.5 // Slower gravity for Tetris feel
+    engineRef.current = engine
+
+    const width = window.innerWidth
+    const height = window.innerHeight
+
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
+      options: {
+        width,
+        height,
+        background: 'transparent',
+        wireframes: false,
+        pixelRatio: window.devicePixelRatio
+      }
+    })
+
+    // 2. Create Tetris Blocks
+    const tetrisBlocks = []
+    const colors = ['#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'] // Classic Tetris colors
+
+    // Helper to create block parts
+    const createBlock = (x: number, y: number, type: number, color: string) => {
+      const size = 30
+      const options = {
+        restitution: 0.2,
+        friction: 0.5,
+        render: {
+          fillStyle: color,
+          strokeStyle: 'rgba(0,0,0,0.5)',
+          lineWidth: 2
+        }
+      }
+
+      // Simple shapes constructed from rectangles
+      switch (type) {
+        case 0: // I
+          return Bodies.rectangle(x, y, size * 4, size, options)
+        case 1: // O
+          return Bodies.rectangle(x, y, size * 2, size * 2, options)
+        case 2: // T
+          return Bodies.fromVertices(x, y, [[
+            { x: 0, y: 0 }, { x: size * 3, y: 0 },
+            { x: size * 3, y: size }, { x: size * 2, y: size },
+            { x: size * 2, y: size * 2 }, { x: size, y: size * 2 },
+            { x: size, y: size }, { x: 0, y: size }
+          ]], options)
+        case 3: // L
+          return Bodies.fromVertices(x, y, [[
+            { x: 0, y: 0 }, { x: size, y: 0 },
+            { x: size, y: size * 3 }, { x: -size, y: size * 3 },
+            { x: -size, y: size * 2 }, { x: 0, y: size * 2 }
+          ]], options)
+        default: // Box default
+          return Bodies.rectangle(x, y, size, size, options)
+      }
+    }
+
+    // Spawn loop
+    const runner = Runner.create()
+    let frameCount = 0
+    const maxBlocks = 40
+
+    Matter.Events.on(runner, 'afterUpdate', () => {
+      frameCount++
+      if (frameCount % 20 === 0 && tetrisBlocks.length < maxBlocks) { // Spawn every 20 frames
+        const type = Math.floor(Math.random() * 5)
+        const color = colors[Math.floor(Math.random() * colors.length)]
+        const x = Math.random() * (width - 100) + 50
+
+        // For simplicity using rectangles for all physics to avoid concave hull issues with 'fromVertices' without decomposition
+        // Using visual approximation: just rectangles and squares
+        let block
+        const size = 30
+        if (type === 0) block = Bodies.rectangle(x, -50, size * 4, size, { ...options(color) }) // I
+        else if (type === 1) block = Bodies.rectangle(x, -50, size * 2, size * 2, { ...options(color) }) // O
+        else if (type === 2) block = Bodies.rectangle(x, -50, size * 3, size, { ...options(color) }) // L-ish (simplified)
+        else block = Bodies.rectangle(x, -50, size, size, { ...options(color) }) // Dot
+
+        Matter.Body.setAngle(block, Math.floor(Math.random() * 4) * (Math.PI / 2)) // 90 deg rotations
+
+        tetrisBlocks.push(block)
+        Composite.add(engine.world, block)
+      }
+    })
+
+    const options = (color: string) => ({
+      restitution: 0.1,
+      friction: 0.8, // High friction to stack
+      render: {
+        fillStyle: color,
+        strokeStyle: 'black',
+        lineWidth: 3
+      }
+    })
+
+    // 3. Walls
+    const wallOptions = { isStatic: true, render: { visible: false } }
+    const floor = Bodies.rectangle(width / 2, height + 50, width, 100, wallOptions)
+    const leftWall = Bodies.rectangle(-50, height / 2, 100, height, wallOptions)
+    const rightWall = Bodies.rectangle(width + 50, height / 2, 100, height, wallOptions)
+    Composite.add(engine.world, [floor, leftWall, rightWall])
+
+    // 4. Mouse
+    const mouse = Mouse.create(render.canvas)
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    })
+    Composite.add(engine.world, mouseConstraint)
+    render.mouse = mouse
+
+    // 5. Run
+    Render.run(render)
+    Runner.run(runner, engine)
+
+    return () => {
+      Render.stop(render)
+      Runner.stop(runner)
+      if (render.canvas) render.canvas.remove()
+      Matter.World.clear(engine.world, false)
+      Matter.Engine.clear(engine)
+    }
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 font-mono pointer-events-auto overflow-hidden">
+      {/* CRT Scanline Filter */}
+      <div className="absolute inset-0 z-[105] pointer-events-none mix-blend-overlay opacity-50"
+        style={{
+          background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
+          backgroundSize: '100% 4px, 6px 100%'
+        }}
+      />
+
+      {/* Glitch Overlay */}
+      <div className="absolute inset-0 z-[104] pointer-events-none animate-pulse opacity-10 bg-green-900 mix-blend-screen" />
+
+      {/* Physics Canvas */}
+      <div ref={sceneRef} className="absolute inset-0 z-[101]" />
+
+      {/* Retro UI */}
+      <div className="absolute top-10 left-0 right-0 text-center pointer-events-none z-[110]">
+        <h1 className="text-4xl md:text-6xl text-[#0f0] font-black tracking-widest animate-glitch-text"
+          style={{ textShadow: '2px 2px 0px #f0f, -2px -2px 0px #0ff', fontFamily: '"Courier New", monospace' }}>
+          INSERT COIN
+        </h1>
+        <p className="text-[#0f0] mt-4 text-xl blink">PRESS START TO CONTINUE</p>
+      </div>
+
+      {/* Pac-Man Animation */}
+      <div className="absolute bottom-20 left-[-100px] z-[102] animate-pacman-run">
+        <div className="w-12 h-12 bg-yellow-400 rounded-full relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-full h-1/2 bg-black animate-pacman-chomp-top origin-bottom-right" />
+          <div className="absolute bottom-0 right-0 w-full h-1/2 bg-black animate-pacman-chomp-bottom origin-top-right" />
+        </div>
+      </div>
+
+      <button
+        onClick={onComplete}
+        className="absolute top-10 right-10 z-[120] text-[#0f0] border-2 border-[#0f0] px-4 py-2 hover:bg-[#0f0] hover:text-black transition-colors font-bold tracking-widest"
+        style={{ fontFamily: '"Courier New", monospace' }}
+      >
+        [X] EXIT
+      </button>
+
+      {/* Inline Styles for Keyframes */}
+      <style jsx>{`
+        @keyframes pacman-run {
+          0% { left: -100px; }
+          100% { left: 100vw; }
+        }
+        @keyframes pacman-chomp-top {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-45deg); }
+        }
+        @keyframes pacman-chomp-bottom {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(45deg); }
+        }
+        .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+      `}</style>
+    </div>
+  )
+}
+
+/* --------------------------------------------------------------------------------
    1. Sakura Breeze (樱花随风 - 捡手机)
    - 阳光光斑 + 旋转飘落的花瓣
 -------------------------------------------------------------------------------- */
@@ -527,13 +736,14 @@ const GothicFog = () => (
 /* --------------------------------------------------------------------------------
    5. Ink Flow (水墨禅意 - 旧梦)
    - 黑白灰阶 + 水墨晕染 + 动态波纹
+   - 优化：使用 CSS Noise 替代 SVG feTurbulence 以提升移动端性能
 -------------------------------------------------------------------------------- */
 const InkFlow = () => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden bg-[#f4e4bc]/30 animate-in fade-in duration-1000">
     {/* 古书滤镜：使用 sepia 营造陈旧感，叠加暖褐色遮罩 */}
     <div className="absolute inset-0 backdrop-sepia-[0.8] backdrop-contrast-[0.9] bg-[#8b5a2b]/10 mix-blend-color-burn" />
 
-    {/* SVG Filter for Gooey/Ink effect */}
+    {/* SVG Filter for Gooey/Ink effect ONLY (Removed heavy paper texture filter) */}
     <svg className="hidden">
       <defs>
         <filter id="ink-spread">
@@ -546,17 +756,17 @@ const InkFlow = () => (
           />
           <feComposite in="SourceGraphic" in2="goo" operator="atop" />
         </filter>
-        <filter id="paper-texture">
-          <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
-          <feDiffuseLighting in="noise" lightingColor="#fff" surfaceScale="2">
-            <feDistantLight azimuth="45" elevation="60" />
-          </feDiffuseLighting>
-        </filter>
       </defs>
     </svg>
 
-    {/* 纸张纹理叠加 */}
-    <div className="absolute inset-0 opacity-20 mix-blend-multiply" style={{ filter: 'url(#paper-texture)' }} />
+    {/* 纸张纹理叠加 - 使用 CSS 噪点替代 SVG 滤镜 */}
+    <div
+      className="absolute inset-0 opacity-10 mix-blend-multiply"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E")`,
+        backgroundSize: '150px 150px'
+      }}
+    />
 
     {/* 墨滴扩散 */}
     <div className="absolute inset-0" style={{ filter: 'url(#ink-spread)' }}>
@@ -567,8 +777,8 @@ const InkFlow = () => (
           style={{
             left: `${Math.random() * 80 + 10}%`,
             top: `${Math.random() * 80 + 10}%`,
-            width: '100px',
-            height: '100px',
+            width: 'clamp(60px, 15vw, 120px)', // 响应式尺寸
+            height: 'clamp(60px, 15vw, 120px)',
             animationDuration: `${Math.random() * 4 + 4}s`,
             animationDelay: `${Math.random() * 2}s`,
             transform: 'scale(0)',
@@ -586,7 +796,7 @@ const InkFlow = () => (
             left: '-20%',
             top: `${Math.random() * 100}%`,
             width: '140%',
-            height: '100px',
+            height: 'clamp(60px, 10vh, 120px)', // 响应式高度
             animationDuration: `${Math.random() * 10 + 10}s`,
             animationDelay: `${Math.random() * 5}s`,
             transform: 'rotate(-10deg)'
@@ -722,6 +932,10 @@ export default function FullScreenEffects({ type, emoji, onComplete }: FullScree
 
   if (type === 'emoji-storm') {
     return <EmojiStorm emoji={emoji} onComplete={onComplete} />
+  }
+
+  if (type === 'retro-arcade') {
+    return <RetroArcade onComplete={onComplete} />
   }
 
   return (

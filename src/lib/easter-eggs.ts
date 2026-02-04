@@ -7,6 +7,7 @@ export type FullScreenEffectType =
   | 'ancient-tragedy'  // 旧梦：寒雪+残红
   | 'ink-flow'         // 水墨禅意：黑白晕染
   | 'emoji-storm'      // 表情包雨：喷泉 + 互动
+  | 'retro-arcade'     // 像素街机：CRT + Tetris
   | 'star-paparazzi'   // 夜规：闪光灯+钻石
   | 'apocalypse-ash'   // 野孩子：余烬+灰烬
   | 'birthday-starlight' // 生日：星光魔法 + 年龄彩蛋
@@ -94,6 +95,13 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     fullScreen: 'birthday-starlight',
     emoji: '🌟',
     dateExclusive: { month: 2, day: 25 } // 仅在 3月25日生效 (月份从0开始)
+  },
+  {
+    // 11. 复古街机 -> 8bit/pixel
+    keywords: ['8bit', 'pixel', 'arcade', '复古', '街机', '像素'],
+    effect: 'confetti',
+    fullScreen: 'retro-arcade',
+    emoji: '👾'
   }
 ]
 
