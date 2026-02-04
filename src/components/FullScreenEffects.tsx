@@ -1,11 +1,338 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FullScreenEffectType } from '@/lib/easter-eggs'
+import Matter from 'matter-js'
 
 interface FullScreenEffectProps {
   type: FullScreenEffectType
+  emoji?: string
   onComplete: () => void
+}
+
+/* --------------------------------------------------------------------------------
+   10. Emoji Storm (表情包雨 - 增强版)
+   - Emoji 喷泉 + 物理碰撞 + 点击互动得分
+-------------------------------------------------------------------------------- */
+const EmojiStorm = ({ emoji = '❤️', onComplete }: { emoji?: string, onComplete: () => void }) => {
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const engineRef = useRef<Matter.Engine | null>(null)
+  const [score, setScore] = useState(0)
+
+  useEffect(() => {
+    if (!sceneRef.current) return
+
+    // 1. Setup Matter.js
+    const Engine = Matter.Engine,
+      Render = Matter.Render,
+      Runner = Matter.Runner,
+      Bodies = Matter.Bodies,
+      Composite = Matter.Composite,
+      Events = Matter.Events,
+      Mouse = Matter.Mouse,
+      MouseConstraint = Matter.MouseConstraint
+
+    const engine = Engine.create()
+    engineRef.current = engine
+
+    // Normal gravity
+    engine.gravity.y = 1
+
+    const width = window.innerWidth
+    const height = window.innerHeight
+
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
+      options: {
+        width,
+        height,
+        background: 'transparent',
+        wireframes: false,
+        pixelRatio: window.devicePixelRatio
+      }
+    })
+
+    // 2. Emoji Emitter Logic
+    const emojis: Matter.Body[] = []
+    const maxEmojis = 50
+    let frameCount = 0
+
+    const runner = Runner.create()
+
+    Events.on(runner, 'afterUpdate', () => {
+      frameCount++
+
+      // Emit new emoji every 5 frames until max
+      if (frameCount % 5 === 0 && emojis.length < maxEmojis) {
+        const x = width / 2 + (Math.random() - 0.5) * 100 // Center bottom
+        const y = height + 50
+
+        const size = Math.random() * 30 + 20
+        const body = Bodies.circle(x, y, size, {
+          restitution: 0.8,
+          friction: 0.005,
+          label: 'emoji',
+          render: {
+            fillStyle: 'transparent', // Invisible physics body
+            strokeStyle: 'transparent'
+          }
+        })
+
+        // Shoot up
+        Matter.Body.setVelocity(body, {
+          x: (Math.random() - 0.5) * 15, // Spread X
+          y: -(Math.random() * 15 + 15)  // Shoot Y
+        })
+
+        emojis.push(body)
+        Composite.add(engine.world, body)
+      }
+
+      // Cleanup fallen emojis
+      for (let i = emojis.length - 1; i >= 0; i--) {
+        if (emojis[i].position.y > height + 100 && emojis[i].velocity.y > 0) {
+          Composite.remove(engine.world, emojis[i])
+          emojis.splice(i, 1)
+        }
+      }
+    })
+
+    // Custom Render Loop for Emojis
+    Events.on(render, 'afterRender', () => {
+      const context = render.context
+      context.font = '40px Arial'
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+
+      emojis.forEach(body => {
+        const { x, y } = body.position
+        const angle = body.angle
+
+        context.save()
+        context.translate(x, y)
+        context.rotate(angle)
+        context.fillText(emoji, 0, 0)
+        context.restore()
+      })
+    })
+
+    // 3. Mouse Interaction (Click to pop)
+    const mouse = Mouse.create(render.canvas)
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    })
+
+    // Handle click/pop
+    Events.on(mouseConstraint, 'mousedown', (event) => {
+      const mousePosition = event.mouse.position
+      // Simple hit test
+      const clickedBodies = Matter.Query.point(emojis, mousePosition)
+
+      clickedBodies.forEach(body => {
+        // Pop effect
+        Composite.remove(engine.world, body)
+        const index = emojis.indexOf(body)
+        if (index > -1) emojis.splice(index, 1)
+
+        setScore(prev => prev + 1)
+      })
+    })
+
+    Composite.add(engine.world, mouseConstraint)
+    render.mouse = mouse
+
+    // 4. Run
+    Render.run(render)
+    Runner.run(runner, engine)
+
+    // Cleanup
+    return () => {
+      Render.stop(render)
+      Runner.stop(runner)
+      if (render.canvas) render.canvas.remove()
+      Matter.World.clear(engine.world, false)
+      Matter.Engine.clear(engine)
+    }
+  }, [emoji])
+
+  return (
+    <div className="fixed inset-0 z-[100] pointer-events-auto">
+      <div ref={sceneRef} className="absolute inset-0" />
+
+      {/* Score UI */}
+      <div className="absolute top-10 right-10 pointer-events-none animate-bounce">
+        <div className="bg-white/90 backdrop-blur rounded-full px-6 py-3 shadow-xl border-4 border-purple-200">
+          <span className="text-3xl font-black text-purple-600 font-mono">
+            {score}
+          </span>
+          <span className="ml-2 text-sm font-bold text-gray-500 uppercase tracking-wider">
+            COMBO
+          </span>
+        </div>
+      </div>
+
+      {/* Instructions */}
+      <div className="absolute bottom-20 left-0 right-0 text-center pointer-events-none opacity-80 animate-pulse">
+        <p className="text-white font-bold text-xl drop-shadow-lg">TAP TO POP!</p>
+      </div>
+
+      <button
+        onClick={onComplete}
+        className="absolute top-10 left-10 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-colors z-[101]"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  )
+}
+
+/* --------------------------------------------------------------------------------
+   9. Zero Gravity (零重力 - Claymorphism + Physics)
+   - 气泡漂浮 + 物理碰撞
+-------------------------------------------------------------------------------- */
+const ZeroGravity = ({ onComplete }: { onComplete: () => void }) => {
+  const sceneRef = useRef<HTMLDivElement>(null)
+  const engineRef = useRef<Matter.Engine | null>(null)
+  const renderRef = useRef<Matter.Render | null>(null)
+  const runnerRef = useRef<Matter.Runner | null>(null)
+
+  useEffect(() => {
+    if (!sceneRef.current) return
+
+    // 1. Setup Matter.js
+    const Engine = Matter.Engine,
+      Render = Matter.Render,
+      Runner = Matter.Runner,
+      Bodies = Matter.Bodies,
+      Composite = Matter.Composite,
+      Mouse = Matter.Mouse,
+      MouseConstraint = Matter.MouseConstraint,
+      Events = Matter.Events
+
+    const engine = Engine.create()
+    engine.gravity.y = 0 // Zero gravity
+    engine.gravity.x = 0
+    engineRef.current = engine
+
+    const width = window.innerWidth
+    const height = window.innerHeight
+
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
+      options: {
+        width,
+        height,
+        background: 'transparent',
+        wireframes: false,
+        pixelRatio: window.devicePixelRatio
+      }
+    })
+    renderRef.current = render
+
+    // 2. Create Floating Phones
+    const phones = []
+    const colors = ['#4F46E5', '#818CF8', '#F97316', '#EC4899', '#10B981']
+
+    // SVG Path for a simple smartphone icon
+    // M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6zm2 2h8v14H8V4z
+    // Simplified rectangle for physics body, but custom render for visual
+
+    for (let i = 0; i < 15; i++) {
+      const width = 40
+      const height = 70
+      const x = Math.random() * (window.innerWidth - width * 2) + width
+      const y = Math.random() * (window.innerHeight - height * 2) + height
+      const color = colors[Math.floor(Math.random() * colors.length)]
+
+      const phone = Bodies.rectangle(x, y, width, height, {
+        restitution: 0.8,
+        friction: 0.01,
+        frictionAir: 0.05, // Higher air friction for floating feel
+        angle: Math.random() * Math.PI * 2,
+        render: {
+          fillStyle: color,
+          strokeStyle: '#ffffff',
+          lineWidth: 2,
+          // We can't easily render SVG paths in Matter.js native renderer without custom rendering loop
+          // So we stick to rounded rectangles which look like phones
+        },
+        chamfer: { radius: 8 } // Rounded corners
+      })
+
+      // Apply random initial velocity and rotation
+      Matter.Body.setVelocity(phone, {
+        x: (Math.random() - 0.5) * 8,
+        y: (Math.random() - 0.5) * 8
+      })
+      Matter.Body.setAngularVelocity(phone, (Math.random() - 0.5) * 0.2)
+
+      phones.push(phone)
+    }
+
+    // 3. Walls (to keep phones inside)
+    const wallOptions = { isStatic: true, render: { visible: false } }
+    const walls = [
+      Bodies.rectangle(width / 2, -50, width, 100, wallOptions), // Top
+      Bodies.rectangle(width / 2, height + 50, width, 100, wallOptions), // Bottom
+      Bodies.rectangle(width + 50, height / 2, 100, height, wallOptions), // Right
+      Bodies.rectangle(-50, height / 2, 100, height, wallOptions) // Left
+    ]
+
+    Composite.add(engine.world, [...phones, ...walls])
+
+    // 4. Mouse Control
+    const mouse = Mouse.create(render.canvas)
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: {
+        stiffness: 0.2,
+        render: { visible: false }
+      }
+    })
+    Composite.add(engine.world, mouseConstraint)
+    render.mouse = mouse
+
+    // 5. Run
+    Render.run(render)
+    const runner = Runner.create()
+    runnerRef.current = runner
+    Runner.run(runner, engine)
+
+    // Cleanup
+    return () => {
+      Render.stop(render)
+      Runner.stop(runner)
+      if (render.canvas) render.canvas.remove()
+      Matter.World.clear(engine.world, false)
+      Matter.Engine.clear(engine)
+    }
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-white/30 backdrop-blur-sm animate-in fade-in duration-500">
+      <div ref={sceneRef} className="absolute inset-0" />
+
+      {/* Instructions & Exit */}
+      <div className="absolute top-20 left-0 right-0 text-center pointer-events-none">
+        <h2 className="text-3xl font-bold text-slate-800 drop-shadow-md animate-bounce">
+          OOPS! MY PHONE!
+        </h2>
+        <p className="text-slate-600 font-medium mt-2">Catch the flying phones!</p>
+      </div>
+
+      <button
+        onClick={onComplete}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-transform active:scale-95 z-[101]"
+      >
+        落地 (Land)
+      </button>
+
+      {/* CSS for Claymorphism effect on canvas circles is hard, simulating via overlay or just relying on canvas style above */}
+    </div>
+  )
 }
 
 /* --------------------------------------------------------------------------------
@@ -167,48 +494,75 @@ const GothicFog = () => (
 )
 
 /* --------------------------------------------------------------------------------
-   5. Ancient Tragedy (寒雪残红 - 旧梦)
-   - 寒冷滤镜 + 飞雪 + 凋零红花
+   5. Ink Flow (水墨禅意 - 旧梦)
+   - 黑白灰阶 + 水墨晕染 + 动态波纹
 -------------------------------------------------------------------------------- */
-const AncientTragedy = () => (
-  <div className="absolute inset-0 pointer-events-none overflow-hidden bg-slate-900/20">
-    {/* 寒冷滤镜 */}
-    <div className="absolute inset-0 mix-blend-overlay bg-blue-900/30" />
+const InkFlow = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden bg-[#f4e4bc]/30 animate-in fade-in duration-1000">
+    {/* 古书滤镜：使用 sepia 营造陈旧感，叠加暖褐色遮罩 */}
+    <div className="absolute inset-0 backdrop-sepia-[0.8] backdrop-contrast-[0.9] bg-[#8b5a2b]/10 mix-blend-color-burn" />
 
-    {/* 飞雪 */}
-    {Array.from({ length: 100 }).map((_, i) => (
-      <div
-        key={`snow-${i}`}
-        className="absolute rounded-full bg-white animate-snow-fall"
-        style={{
-          left: `${Math.random() * 100}%`,
-          top: '-10px',
-          width: `${Math.random() * 3 + 1}px`,
-          height: `${Math.random() * 3 + 1}px`,
-          opacity: Math.random() * 0.7 + 0.3,
-          animationDuration: `${Math.random() * 5 + 3}s`,
-          animationDelay: `${Math.random() * 2}s`
-        }}
-      />
-    ))}
+    {/* SVG Filter for Gooey/Ink effect */}
+    <svg className="hidden">
+      <defs>
+        <filter id="ink-spread">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+            result="goo"
+          />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+        <filter id="paper-texture">
+          <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
+          <feDiffuseLighting in="noise" lightingColor="#fff" surfaceScale="2">
+            <feDistantLight azimuth="45" elevation="60" />
+          </feDiffuseLighting>
+        </filter>
+      </defs>
+    </svg>
 
-    {/* 凋零红花 (CSS模拟花瓣) */}
-    {Array.from({ length: 15 }).map((_, i) => (
-      <div
-        key={`petal-${i}`}
-        className="absolute animate-withered-fall"
-        style={{
-          left: `${Math.random() * 100}%`,
-          top: '-20px',
-          animationDuration: `${Math.random() * 4 + 4}s`,
-          animationDelay: `${Math.random() * 3}s`
-        }}
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2C12 2 15 5 15 10C15 15 10 18 10 18C10 18 5 15 5 10C5 5 8 2 10 2Z" fill="#8B0000" fillOpacity="0.8" />
-        </svg>
-      </div>
-    ))}
+    {/* 纸张纹理叠加 */}
+    <div className="absolute inset-0 opacity-20 mix-blend-multiply" style={{ filter: 'url(#paper-texture)' }} />
+
+    {/* 墨滴扩散 */}
+    <div className="absolute inset-0" style={{ filter: 'url(#ink-spread)' }}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={`ink-${i}`}
+          className="absolute rounded-full bg-black/80 animate-ink-spread"
+          style={{
+            left: `${Math.random() * 80 + 10}%`,
+            top: `${Math.random() * 80 + 10}%`,
+            width: '100px',
+            height: '100px',
+            animationDuration: `${Math.random() * 4 + 4}s`,
+            animationDelay: `${Math.random() * 2}s`,
+            transform: 'scale(0)',
+            opacity: 0
+          }}
+        />
+      ))}
+
+      {/* 烟雾/墨流 */}
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div
+          key={`flow-${i}`}
+          className="absolute bg-gray-800/20 blur-xl animate-smoke-flow"
+          style={{
+            left: '-20%',
+            top: `${Math.random() * 100}%`,
+            width: '140%',
+            height: '100px',
+            animationDuration: `${Math.random() * 10 + 10}s`,
+            animationDelay: `${Math.random() * 5}s`,
+            transform: 'rotate(-10deg)'
+          }}
+        />
+      ))}
+    </div>
   </div>
 )
 
@@ -320,7 +674,7 @@ const BirthdayStarlight = () => {
 /* --------------------------------------------------------------------------------
    Main Component
 -------------------------------------------------------------------------------- */
-export default function FullScreenEffects({ type, onComplete }: FullScreenEffectProps) {
+export default function FullScreenEffects({ type, emoji, onComplete }: FullScreenEffectProps) {
   useEffect(() => {
     // 6秒后自动结束特效 (稍微延长一点以展示完整效果)
     const timer = setTimeout(() => {
@@ -331,13 +685,21 @@ export default function FullScreenEffects({ type, onComplete }: FullScreenEffect
 
   if (type === 'none') return null
 
+  if (type === 'zero-gravity') {
+    return <ZeroGravity onComplete={onComplete} />
+  }
+
+  if (type === 'emoji-storm') {
+    return <EmojiStorm emoji={emoji} onComplete={onComplete} />
+  }
+
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
       {type === 'sakura-breeze' && <SakuraBreeze />}
       {type === 'police-glitch' && <PoliceGlitch />}
       {type === 'city-dream' && <CityDream />}
       {type === 'gothic-fog' && <GothicFog />}
-      {type === 'ancient-tragedy' && <AncientTragedy />}
+      {type === 'ink-flow' && <InkFlow />}
       {type === 'star-paparazzi' && <StarPaparazzi />}
       {type === 'apocalypse-ash' && <ApocalypseAsh />}
       {type === 'birthday-starlight' && <BirthdayStarlight />}

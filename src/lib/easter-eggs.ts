@@ -5,9 +5,12 @@ export type FullScreenEffectType =
   | 'city-dream'       // 玛利亚：城市光斑+羽毛
   | 'gothic-fog'       // 奇夏：迷雾+蝙蝠
   | 'ancient-tragedy'  // 旧梦：寒雪+残红
+  | 'ink-flow'         // 水墨禅意：黑白晕染
+  | 'emoji-storm'      // 表情包雨：喷泉 + 互动
   | 'star-paparazzi'   // 夜规：闪光灯+钻石
   | 'apocalypse-ash'   // 野孩子：余烬+灰烬
   | 'birthday-starlight' // 生日：星光魔法 + 年龄彩蛋
+  | 'zero-gravity'     // 零重力：物理引擎漂浮
   | 'none'
 
 export interface EasterEggConfig {
@@ -22,11 +25,11 @@ export interface EasterEggConfig {
 // 小说彩蛋配置
 export const EASTER_EGGS: EasterEggConfig[] = [
   {
-    // 1. 《捡手机》 -> 樱花随风+阳光感
-    keywords: ['捡手机'],
-    effect: 'confetti',
-    fullScreen: 'sakura-breeze',
-    emoji: '🌸'
+    // 1. 《捡手机》 -> 零重力手机漂浮
+    keywords: ['捡手机', 'zero gravity', '漂浮', '失重', 'fly', '零重力'],
+    effect: 'glow',
+    fullScreen: 'zero-gravity',
+    emoji: '📱'
   },
   {
     // 2. 《只有一件事是重要的》 -> 赛博故障+警灯色调
@@ -51,11 +54,11 @@ export const EASTER_EGGS: EasterEggConfig[] = [
     // emoji: '🦇' // 用户要求文字上不要蝙蝠
   },
   {
-    // 5. 《旧梦遗抄》 -> 全屏寒雪残红
-    keywords: ['旧梦遗抄', '旧梦'],
+    // 5. 《旧梦遗抄》 -> 水墨禅意
+    keywords: ['旧梦遗抄', '旧梦', 'ink', '水墨', 'zen', 'flow'],
     effect: 'rain',
-    fullScreen: 'ancient-tragedy',
-    emoji: '❄️'
+    fullScreen: 'ink-flow',
+    emoji: '✒️'
   },
   {
     // 6. 《夜间规则》 -> 聚光灯
@@ -96,6 +99,22 @@ export const EASTER_EGGS: EasterEggConfig[] = [
 
 export function getEasterEgg(content: string): EasterEggConfig | null {
   if (!content) return null
+
+  // 0. 检查 Emoji Storm 触发条件 (单个 Emoji 重复 3 次以上)
+  // 简化版正则，匹配非ASCII字符重复3次以上
+  // 这是一个近似解法，因为 JS 的 Emoji 正则比较复杂，这里假设用户输入的非ASCII重复字符就是 Emoji
+  const emojiStormRegex = /^([^\x00-\x7F])\1{2,}$/
+  const match = content.match(emojiStormRegex)
+
+  if (match) {
+    return {
+      keywords: [], // Dynamic trigger
+      effect: 'confetti', // Base effect
+      fullScreen: 'emoji-storm',
+      emoji: match[1] // Capture the specific emoji
+    }
+  }
+
   const lowerContent = content.toLowerCase()
   const now = new Date()
 
