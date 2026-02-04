@@ -87,7 +87,11 @@ export default function ChatRoom() {
     fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userType: type, sessionId: sessionId })
+      body: JSON.stringify({
+        userType: type,
+        sessionId: sessionId,
+        themeId: savedThemeId // 如果本地有保存的主题，带上它以确保数据库与本地一致（尤其是新建用户时）
+      })
     })
       .then(res => res.json())
       .then(data => {
@@ -535,14 +539,19 @@ export default function ChatRoom() {
           const updatedPrev = prev.map(msg => {
             if (msg.reply_to_id && !msg.reply_to) {
               const repliedMsg = uniqueNewMessages.find((m: Message) => m.id === msg.reply_to_id)
-              if (repliedMsg) {
+              // 防止引用自己（虽然数据库层应该限制，但前端防御一下）
+              if (repliedMsg && repliedMsg.id !== msg.id) {
                 return { ...msg, reply_to: repliedMsg }
               }
             }
             return msg
           })
 
-          return [...uniqueNewMessages, ...updatedPrev]
+          // 合并并强制按时间正序排序，防止任何乱序导致的“反向”视觉问题
+          const combinedMessages = [...uniqueNewMessages, ...updatedPrev]
+          return combinedMessages.sort((a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          )
         })
         if (data.messages.length < 50) setHasMore(false)
       } else {
