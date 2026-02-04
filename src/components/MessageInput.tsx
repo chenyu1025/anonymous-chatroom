@@ -183,9 +183,8 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   }
 
   const confirmSendVoice = () => {
-    if (recordedAudio) {
-      uploadVoice(recordedAudio.blob)
-    }
+    if (uploading || !recordedAudio) return
+    uploadVoice(recordedAudio.blob)
   }
 
   const uploadVoice = async (blob: Blob) => {
@@ -258,16 +257,18 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
               <div className="flex space-x-3">
                 <button
                   onClick={cancelRecording}
-                  className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
+                  disabled={uploading}
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   取消
                 </button>
                 <button
                   onClick={confirmSendVoice}
-                  className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                  disabled={uploading}
+                  className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send size={16} />
-                  <span>发送</span>
+                  {uploading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  <span>{uploading ? '发送中...' : '发送'}</span>
                 </button>
               </div>
             </div>

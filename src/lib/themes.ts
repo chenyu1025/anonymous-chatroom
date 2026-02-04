@@ -84,11 +84,11 @@ export const OWNER_THEMES: Theme[] = [
     id: 'doraemon',
     name: '哆啦A梦',
     avatar: '/themes/doraemon.png',
-    bubbleClass: 'bg-[#3caeff] border-blue-300',
-    textClass: 'text-white',
-    borderClass: 'border-blue-400',
-    arrowColor: '#3caeff',
-    backgroundGradient: 'linear-gradient(-45deg, #ecfeff, #cffafe, #a5f3fc, #ecfeff)'
+    bubbleClass: 'bg-[#2ea0ee] border-blue-400', // 背景轻微加深一点，#2ea0ee 比原#3caeff深
+    textClass: 'text-white font-medium drop-shadow-xs', // 细粗+超轻微阴影
+    borderClass: 'border-blue-500',
+    arrowColor: '#2ea0ee', // 箭头和背景同步
+    backgroundGradient: 'linear-gradient(-45deg, #e6f9ff, #c5f0fd, #9ee2fb, #e6f9ff)' // 渐变也轻微加深一点
   },
   {
     id: 'backkom',
