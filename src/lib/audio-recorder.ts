@@ -12,12 +12,20 @@ export class AudioRecorder {
     this.chunks = [];
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1, // 强制单声道，减小体积并提高兼容性
+          echoCancellation: true, // 回声消除
+          noiseSuppression: true, // 降噪
+          autoGainControl: true, // 自动增益
+        }
+      });
 
-      // Prefer standard MIME types that work across browsers
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/mp4';
+      // 优先尝试 MP4 (Safari 友好，兼容性更好)，然后是 WebM (Chrome/Android 标准)
+      // Safari 14.1+ 虽然支持 WebM 播放，但录制 MP4 (AAC) 对 iOS 生态更友好
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : 'audio/webm;codecs=opus';
 
       // Set lower bitrate for faster loading (32kbps)
       const options: MediaRecorderOptions = {

@@ -179,6 +179,21 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
   const progressBarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // 当 src 改变时重置状态
+    setIsPlaying(false)
+    setCurrentTime(0)
+    setDuration(0)
+    setBuffered(0)
+    setIsReady(false)
+    setIsLoading(false)
+    setError(false)
+    playIntentRef.current = false
+    if (audioRef.current) {
+      audioRef.current.load()
+    }
+  }, [src])
+
+  useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
@@ -226,21 +241,11 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
     const handleCanPlay = () => {
       setIsReady(true)
 
-      // 如果用户想要播放，并且当前是暂停状态，尝试播放
-      if (playIntentRef.current && audio.paused) {
-        const playPromise = audio.play()
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error('Auto-play after load failed:', error)
-            // 如果自动播放失败，重置意图和加载状态
-            playIntentRef.current = false
-            setIsLoading(false)
-            setIsPlaying(false)
-          })
-        }
-      } else if (!playIntentRef.current) {
-        // 只有在没有播放意图时才取消 loading
-        // 如果有播放意图，我们要等到 playing 事件才取消 loading
+      // 在 iOS 上，不要在这里自动调用 play()，因为这可能不在用户交互堆栈中，会导致 NotAllowedError。
+      // togglePlay 中的 play() 调用会自动等待数据加载。
+      // 只有在 playIntentRef 为 false 时才取消 loading，
+      // 如果为 true，说明正在等待播放（playing 事件会取消 loading）
+      if (!playIntentRef.current) {
         setIsLoading(false)
       }
     }
@@ -269,7 +274,8 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
       setIsLoading(false)
     }
 
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error('Audio error:', e, audio.error)
       setIsLoading(false)
       setError(true)
       playIntentRef.current = false
@@ -342,6 +348,12 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
         playIntentRef.current = true
         setIsLoading(true) // 立即显示加载状态
 
+        // 如果音频从未加载过（readyState === 0），或者之前出错
+        // 显式调用 load() 可以帮助在某些 iOS 版本上重置状态
+        if (audioRef.current.readyState === 0 || error) {
+          audioRef.current.load()
+        }
+
         // 关键：在移动端，直接调用 play() 是最稳妥的唤醒方式
         // 不要先 load()，除非是错误重试。直接 play() 会自动触发加载
         const playPromise = audioRef.current.play()
@@ -353,6 +365,12 @@ export default function AudioPlayer({ src, isOwner = false }: AudioPlayerProps) 
             if (error.name !== 'AbortError') {
               playIntentRef.current = false
               setIsLoading(false)
+              // 如果是 NotAllowedError，可能是因为交互限制，或者之前的 play 被打断
+              if (error.name === 'NotAllowedError') {
+                // 可以选择提示用户，或者重置状态让用户再点一次
+              } else {
+                setError(true)
+              }
             }
           })
         }

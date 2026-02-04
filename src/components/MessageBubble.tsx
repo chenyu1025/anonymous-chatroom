@@ -186,20 +186,18 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
 
           {/* 引用按钮 - 移动端常驻，桌面端悬浮显示 */}
           {/* 如果当前是右对齐（自己的消息或访客视角下的其他访客消息），按钮在左边；否则在右边 */}
-          {!isCurrentUser && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onReply(message)
-              }}
-              className={`absolute bottom-0 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
-                ${isRightAligned ? '-left-8' : '-right-8'}
-                opacity-100 md:opacity-0 md:group-hover:opacity-100`}
-              title="引用回复"
-            >
-              <Reply size={14} />
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onReply(message)
+            }}
+            className={`absolute bottom-0 p-1.5 rounded-full bg-gray-100 text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm transition-all
+              ${isRightAligned ? '-left-8' : '-right-8'}
+              opacity-100 md:opacity-0 md:group-hover:opacity-100`}
+            title="引用回复"
+          >
+            <Reply size={14} />
+          </button>
 
           {/* 小箭头：只有 owner 且使用了主题样式时显示 */}
           {userType === 'owner' && ((themeId && themeId !== 'default') || userType === 'owner') ? (
