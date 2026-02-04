@@ -390,7 +390,12 @@ export default function ChatRoom() {
               (ownerIdRef.current && newUser.id === ownerIdRef.current) ||
               (isGuest && !isMe && newUser.theme_id)
 
-            if (isOwnerUpdate && isGuest) {
+            // 防御性检查：如果是访客，且收到的更新不是来自 Owner (或疑似 Owner)，则忽略主题变更
+            // 防止其他访客的初始化心跳（可能带有旧的主题）污染当前全局状态
+            // 只有当明确是 user_type === 'owner' 或者 id 匹配已知 ownerId 时，才同步主题
+            const isTrustedOwnerSource = newUser.user_type === 'owner' || (ownerIdRef.current && newUser.id === ownerIdRef.current)
+
+            if (isOwnerUpdate && isGuest && isTrustedOwnerSource) {
               // 更新 ownerId 引用（如果之前为空）
               if (!ownerIdRef.current) {
                 ownerIdRef.current = newUser.id
