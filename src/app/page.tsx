@@ -112,6 +112,11 @@ export default function ChatRoom() {
               currentThemeIdRef.current = data.user.theme_id
               localStorage.setItem('chatroom_theme_id', data.user.theme_id)
             }
+          } else {
+            // 如果是访客，且数据库中已经有了 theme_id，说明上次会话保留了主题
+            // 但访客应该始终跟随 owner 的主题，或者如果是自己上次存的主题也可以保留？
+            // 现在的逻辑是：访客初始化先用本地的，然后马上会去拉取 owner 的主题覆盖
+            // 所以这里暂时不用做特殊处理，下面 fetch('/api/users') 会处理同步 owner
           }
         }
       })
