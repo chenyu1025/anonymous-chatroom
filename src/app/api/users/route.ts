@@ -87,10 +87,14 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // 定义在线的阈值（例如 2 分钟内活跃过）
+    const fiveMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+
     const { data, error } = await supabase
       .from('users')
       .select('id, user_type, is_online, last_seen, theme_id')
       .eq('is_online', true)
+      .gt('last_seen', fiveMinutesAgo) // 增加时间过滤
 
     if (error) {
       console.error('获取在线用户错误:', error)
