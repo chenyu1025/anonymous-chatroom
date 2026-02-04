@@ -68,6 +68,20 @@ export default function ChatRoom() {
 
   const router = useRouter()
 
+  // 获取在线用户数
+  const fetchOnlineUsers = async () => {
+    try {
+      const res = await fetch('/api/users')
+      const data = await res.json()
+      if (data.users) {
+        setOnlineUsers(data.users.length)
+        console.log('Online users:', data.users.length)
+      }
+    } catch (error) {
+      console.error('Failed to fetch online users:', error)
+    }
+  }
+
   // 初始化用户
   useEffect(() => {
     const sessionId = getSessionId()
@@ -75,6 +89,11 @@ export default function ChatRoom() {
     setCurrentUserId(sessionId)
     setUserType(type)
     setLoading(false)
+
+    // 立即获取一次在线人数
+    fetchOnlineUsers()
+    // 每 30 秒更新一次在线人数
+    const onlineInterval = setInterval(fetchOnlineUsers, 30000)
 
     // 尝试从本地存储恢复主题
     const savedThemeId = localStorage.getItem('chatroom_theme_id')
@@ -98,6 +117,9 @@ export default function ChatRoom() {
         if (data.user) {
           setCurrentUserUuid(data.user.id)
           currentUserUuidRef.current = data.user.id
+
+          // 更新在线人数
+          fetchOnlineUsers()
 
           // 如果是主人，优先使用本地存储的主题（用户的主动选择），其次才是数据库主题
           if (type === 'owner') {
@@ -161,6 +183,10 @@ export default function ChatRoom() {
           }
         })
         .catch(console.error)
+    }
+
+    return () => {
+      clearInterval(onlineInterval)
     }
   }, [])
 
@@ -255,6 +281,18 @@ export default function ChatRoom() {
     // 2. 订阅实时消息
     const channel = supabase
       .channel('room1')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // 监听所有事件以更新在线人数 (INSERT/UPDATE/DELETE)
+          schema: 'public',
+          table: 'users'
+        },
+        () => {
+          // 当用户表发生变化时，更新在线人数
+          fetchOnlineUsers()
+        }
+      )
       .on(
         'postgres_changes',
         {
@@ -712,10 +750,11 @@ export default function ChatRoom() {
             )}
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1 text-gray-600">
+            {/* 隐藏在线人数显示，但保留逻辑 */}
+            {/* <div className="flex items-center space-x-1 text-gray-600">
               <Users size={16} />
               <span className="text-sm">{onlineUsers}</span>
-            </div>
+            </div> */}
 
             {userType === 'guest' && (
               <button
