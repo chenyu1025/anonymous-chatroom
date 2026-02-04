@@ -12,11 +12,11 @@ interface MessageBubbleProps {
   onReply: (message: Message) => void
 }
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import AudioPlayer from './AudioPlayer'
 import { getEasterEgg } from '@/lib/easter-eggs'
 
-export default function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
+function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }: MessageBubbleProps) {
   const [isZoomed, setIsZoomed] = useState(false)
   const [isImageLoading, setIsImageLoading] = useState(true)
 
@@ -187,6 +187,7 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
             font-serif
             backdrop-blur-none
             rounded-xl
+
           `.replace(/\s+/g, ' ')
           break
 
@@ -412,3 +413,17 @@ export default function MessageBubble({ message, isCurrentUser, userType, viewer
     </>
   )
 }
+
+export default memo(MessageBubble, (prev, next) => {
+  // 自定义比较逻辑：只有当关键属性变化时才重渲染
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.content === next.message.content &&
+    prev.message.type === next.message.type &&
+    prev.message.users?.theme_id === next.message.users?.theme_id &&
+    prev.isCurrentUser === next.isCurrentUser &&
+    prev.userType === next.userType &&
+    prev.viewerType === next.viewerType
+    // 注意：onReply 函数引用变化通常忽略，除非明确需要
+  )
+})

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, useLayoutEffect } from 'react'
+import { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso'
 import MessageBubble from '@/components/MessageBubble'
 import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
@@ -60,9 +61,10 @@ export default function ChatRoom() {
     return () => clearInterval(timer)
   }, [])
 
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const prevScrollHeightRef = useRef(0)
+  // const messagesEndRef = useRef<HTMLDivElement>(null)
+  // const containerRef = useRef<HTMLDivElement>(null)
+  const virtuosoRef = useRef<VirtuosoHandle>(null)
+  // const prevScrollHeightRef = useRef(0)
   const isLoadingMoreRef = useRef(false)
   const isAtBottomRef = useRef(true)
 
@@ -571,7 +573,8 @@ export default function ChatRoom() {
 
   // 滚动到底部
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' })
   }
 
   // 加载更多消息
@@ -583,9 +586,9 @@ export default function ChatRoom() {
     isLoadingMoreRef.current = true
 
     // 记录当前滚动高度
-    if (containerRef.current) {
-      prevScrollHeightRef.current = containerRef.current.scrollHeight
-    }
+    // if (containerRef.current) {
+    //   prevScrollHeightRef.current = containerRef.current.scrollHeight
+    // }
 
     try {
       const oldestMessage = messages[0]
@@ -650,32 +653,20 @@ export default function ChatRoom() {
     }
   }
 
-  // 监听滚动
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
-
-    // 加载更多
-    if (scrollTop < 50 && hasMore && !isLoadingMore) {
-      loadMoreMessages()
-    }
-
-    // 显示/隐藏回到底部按钮 (距离底部超过 300px 时显示)
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    const isAtBottom = distanceFromBottom <= 300
-    isAtBottomRef.current = isAtBottom
-    setShowScrollToBottom(!isAtBottom)
-  }
+  // 监听滚动 - Virtuoso 接管滚动，此函数不再使用
+  // const handleScroll = (e: React.UIEvent<HTMLDivElement>) => { ... }
 
   // 处理消息更新后的滚动位置
   useLayoutEffect(() => {
-    // 如果是加载更多，恢复滚动位置
-    if (isLoadingMoreRef.current && containerRef.current) {
-      const newScrollHeight = containerRef.current.scrollHeight
-      const diff = newScrollHeight - prevScrollHeightRef.current
-      containerRef.current.scrollTop = diff
-      isLoadingMoreRef.current = false
-    } else {
-      // 如果是新消息（且不是加载更多）
+    // 如果是加载更多，恢复滚动位置 - Virtuoso 会自动处理
+    // if (isLoadingMoreRef.current && containerRef.current) {
+    //   const newScrollHeight = containerRef.current.scrollHeight
+    //   const diff = newScrollHeight - prevScrollHeightRef.current
+    //   containerRef.current.scrollTop = diff
+    //   isLoadingMoreRef.current = false
+    // } else {
+    // 如果是新消息（且不是加载更多）
+    if (!isLoadingMoreRef.current) {
       const lastMessage = messages[messages.length - 1]
 
       // 判断是否是自己发的消息
@@ -686,9 +677,16 @@ export default function ChatRoom() {
 
       // 如果是自己发的消息，或者当前就在底部，则滚动到底部
       if (isMyMessage || isAtBottomRef.current) {
-        scrollToBottom()
+        // 使用 setTimeout 确保渲染完成后滚动
+        setTimeout(scrollToBottom, 50)
       }
     }
+
+    // 重置标记
+    if (isLoadingMoreRef.current) {
+      isLoadingMoreRef.current = false
+    }
+    // }
   }, [messages])
 
   // 退出主人模式
@@ -826,35 +824,22 @@ export default function ChatRoom() {
       )}
 
       {/* 消息区域 */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 [overflow-anchor:none]"
-      >
-        {hasMore && (
-          <div className="text-center py-2">
-            <button
-              onClick={loadMoreMessages}
-              disabled={isLoadingMore}
-              className={`text-sm px-4 py-1 rounded-full transition-colors ${loadError
-                ? 'text-red-600 hover:bg-red-50'
-                : 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {isLoadingMore ? '加载中...' : (loadError ? '加载失败，点击重试' : '点击加载更多历史消息')}
-            </button>
-          </div>
-        )}
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-500">
-              <p className="mb-2">暂无消息</p>
-              <p className="text-sm">开始聊天吧！</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {messages.map((message) => (
+      <div className="flex-1 overflow-hidden relative">
+        <Virtuoso
+          ref={virtuosoRef}
+          data={messages}
+          initialTopMostItemIndex={messages.length - 1}
+          atBottomStateChange={(atBottom) => {
+            isAtBottomRef.current = atBottom
+            setShowScrollToBottom(!atBottom)
+          }}
+          startReached={() => {
+            if (hasMore && !isLoadingMore) {
+              loadMoreMessages()
+            }
+          }}
+          itemContent={(index, message) => (
+            <div className="px-4 pt-2">
               <MessageBubble
                 key={message.id}
                 message={message}
@@ -863,10 +848,39 @@ export default function ChatRoom() {
                 viewerType={userType}
                 onReply={setReplyingTo}
               />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+            </div>
+          )}
+          components={{
+            Header: () => hasMore ? (
+              <div className="text-center py-4">
+                <button
+                  onClick={loadMoreMessages}
+                  disabled={isLoadingMore}
+                  className={`text-sm px-4 py-1 rounded-full transition-colors ${loadError
+                    ? 'text-red-600 hover:bg-red-50'
+                    : 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isLoadingMore ? '加载中...' : (loadError ? '加载失败，点击重试' : '加载更多历史消息')}
+                </button>
+              </div>
+            ) : (messages.length > 0 ? (
+              <div className="text-center py-4 text-gray-400 text-xs">
+                没有更多消息了
+              </div>
+            ) : null),
+            EmptyPlaceholder: () => (
+              <div className="flex items-center justify-center h-full min-h-[200px]">
+                <div className="text-center text-gray-500">
+                  <p className="mb-2">暂无消息</p>
+                  <p className="text-sm">开始聊天吧！</p>
+                </div>
+              </div>
+            ),
+            Footer: () => <div className="h-4" /> // 底部留白
+          }}
+          className="h-full [overflow-anchor:none]"
+        />
       </div>
 
       {/* 快速回到底部按钮 */}
