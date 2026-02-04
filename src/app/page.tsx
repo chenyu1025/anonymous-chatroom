@@ -64,6 +64,7 @@ export default function ChatRoom() {
   const containerRef = useRef<HTMLDivElement>(null)
   const prevScrollHeightRef = useRef(0)
   const isLoadingMoreRef = useRef(false)
+  const isAtBottomRef = useRef(true)
 
   const router = useRouter()
 
@@ -541,7 +542,9 @@ export default function ChatRoom() {
 
     // 显示/隐藏回到底部按钮 (距离底部超过 300px 时显示)
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    setShowScrollToBottom(distanceFromBottom > 300)
+    const isAtBottom = distanceFromBottom <= 300
+    isAtBottomRef.current = isAtBottom
+    setShowScrollToBottom(!isAtBottom)
   }
 
   // 处理消息更新后的滚动位置
@@ -553,8 +556,19 @@ export default function ChatRoom() {
       containerRef.current.scrollTop = diff
       isLoadingMoreRef.current = false
     } else {
-      // 如果是新消息（且不是加载更多），滚动到底部
-      scrollToBottom()
+      // 如果是新消息（且不是加载更多）
+      const lastMessage = messages[messages.length - 1]
+      
+      // 判断是否是自己发的消息
+      const isMyMessage = lastMessage && (
+        (currentUserUuidRef.current && lastMessage.user_id === currentUserUuidRef.current) ||
+        (!!lastMessage.users?.session_id && lastMessage.users.session_id === currentUserId)
+      )
+
+      // 如果是自己发的消息，或者当前就在底部，则滚动到底部
+      if (isMyMessage || isAtBottomRef.current) {
+        scrollToBottom()
+      }
     }
   }, [messages])
 
