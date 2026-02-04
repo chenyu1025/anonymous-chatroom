@@ -95,11 +95,19 @@ export default function ChatRoom() {
           setCurrentUserUuid(data.user.id)
           currentUserUuidRef.current = data.user.id
 
-          // 如果是主人，恢复自己的主题
-          if (type === 'owner' && data.user.theme_id) {
-            setCurrentThemeId(data.user.theme_id)
-            currentThemeIdRef.current = data.user.theme_id
-            localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+          // 如果是主人，优先使用本地存储的主题（用户的主动选择），其次才是数据库主题
+          if (type === 'owner') {
+            // 如果本地有保存的主题，且与数据库不一致，则以本地为准（可能是上次切换后还没同步完，或者数据库延迟）
+            // 但为了保险，通常还是以数据库为准？不，用户体验优先。
+            // 这里逻辑修改：如果本地有，就用本地的；如果本地没有，再用数据库的。
+            if (savedThemeId) {
+              // 本地已经设置了，不需要做任何事，保持 useEffect 初始逻辑
+            } else if (data.user.theme_id) {
+              // 本地没有（比如清缓存了），才用数据库的
+              setCurrentThemeId(data.user.theme_id)
+              currentThemeIdRef.current = data.user.theme_id
+              localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+            }
           }
         }
       })
@@ -114,7 +122,8 @@ export default function ChatRoom() {
             const owner = data.users.find((u: any) => u.user_type === 'owner')
             if (owner) {
               ownerIdRef.current = owner.id
-              if (owner.theme_id) {
+              // 访客强制同步主人的主题，覆盖本地存储
+              if (owner.theme_id && owner.theme_id !== savedThemeId) {
                 setCurrentThemeId(owner.theme_id)
                 currentThemeIdRef.current = owner.theme_id
                 localStorage.setItem('chatroom_theme_id', owner.theme_id)
@@ -296,6 +305,11 @@ export default function ChatRoom() {
             // 1. 检查是否已经存在该 ID 的消息（防止重复推送）
             if (prev.some(msg => msg.id === newMessage.id)) {
               return prev
+            }
+
+            // 规范化 reply_to 字段（如果是数组，取第一个）
+            if (Array.isArray(newMessage.reply_to)) {
+              newMessage.reply_to = newMessage.reply_to[0]
             }
 
             // 2. 检查是否有匹配的乐观消息（由我发送、内容相同、最近创建、且是乐观状态）
@@ -516,7 +530,19 @@ export default function ChatRoom() {
             // 这里我们简单地停止加载，避免无限循环
             return prev
           }
-          return [...uniqueNewMessages, ...prev]
+
+          // 尝试修复引用链：检查当前消息列表(prev)中是否有引用了新加载消息(uniqueNewMessages)的情况
+          const updatedPrev = prev.map(msg => {
+            if (msg.reply_to_id && !msg.reply_to) {
+              const repliedMsg = uniqueNewMessages.find((m: Message) => m.id === msg.reply_to_id)
+              if (repliedMsg) {
+                return { ...msg, reply_to: repliedMsg }
+              }
+            }
+            return msg
+          })
+
+          return [...uniqueNewMessages, ...updatedPrev]
         })
         if (data.messages.length < 50) setHasMore(false)
       } else {
@@ -558,7 +584,7 @@ export default function ChatRoom() {
     } else {
       // 如果是新消息（且不是加载更多）
       const lastMessage = messages[messages.length - 1]
-      
+
       // 判断是否是自己发的消息
       const isMyMessage = lastMessage && (
         (currentUserUuidRef.current && lastMessage.user_id === currentUserUuidRef.current) ||
