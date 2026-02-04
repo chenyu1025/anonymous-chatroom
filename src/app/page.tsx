@@ -10,7 +10,7 @@ import { getSessionId, getUserType } from '@/lib/session'
 import { Users, Settings, X, Palette, LogOut, ChevronDown } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
-import { DEFAULT_THEME_ID } from '@/lib/themes'
+import { DEFAULT_THEME_ID, OWNER_THEMES } from '@/lib/themes'
 import BackgroundParticles from '@/components/BackgroundParticles'
 import ClickSparkles from '@/components/ClickSparkles'
 import FluidCursorTrail from '@/components/FluidCursorTrail'
@@ -41,6 +41,9 @@ export default function ChatRoom() {
   const [loadError, setLoadError] = useState(false)
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
   const [isBirthday, setIsBirthday] = useState(false)
+
+  // 获取当前主题对象
+  const currentTheme = OWNER_THEMES.find(t => t.id === currentThemeId) || OWNER_THEMES[0]
 
   // 检查是否是 3.25 生日
   useEffect(() => {
@@ -486,7 +489,14 @@ export default function ChatRoom() {
   }
 
   return (
-    <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden relative">
+    <div
+      className="h-[100dvh] flex flex-col overflow-hidden relative transition-colors duration-500"
+      style={{
+        background: currentTheme.backgroundGradient,
+        backgroundSize: '400% 400%',
+        animation: 'gradient 15s ease infinite'
+      }}
+    >
       <BackgroundParticles />
       <ClickSparkles />
       <FluidCursorTrail />

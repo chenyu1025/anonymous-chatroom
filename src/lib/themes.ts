@@ -6,17 +6,19 @@ export interface Theme {
   textClass: string
   borderClass: string
   arrowColor: string // CSS color value for the arrow border
+  backgroundGradient: string // CSS linear-gradient value
 }
 
 export const OWNER_THEMES: Theme[] = [
   {
     id: 'sprigatito',
     name: '新叶喵',
-    avatar: '/sprigatito.png', // Keep original path for compatibility or use /themes/sprigatito.png
+    avatar: '/themes/sprigatito.png',
     bubbleClass: 'bg-[#98e29d] border-emerald-200',
     textClass: 'text-emerald-900',
     borderClass: 'border-emerald-300',
-    arrowColor: '#98e29d'
+    arrowColor: '#98e29d',
+    backgroundGradient: 'linear-gradient(-45deg, #f0fdf4, #dcfce7, #bbf7d0, #f0fdf4)'
   },
   {
     id: 'bulbasaur',
@@ -25,7 +27,8 @@ export const OWNER_THEMES: Theme[] = [
     bubbleClass: 'bg-[#4ad0b0] border-teal-200',
     textClass: 'text-teal-900',
     borderClass: 'border-teal-300',
-    arrowColor: '#4ad0b0'
+    arrowColor: '#4ad0b0',
+    backgroundGradient: 'linear-gradient(-45deg, #f0fdfa, #ccfbf1, #99f6e4, #f0fdfa)'
   },
   {
     id: 'rowlet',
@@ -34,7 +37,8 @@ export const OWNER_THEMES: Theme[] = [
     bubbleClass: 'bg-[#bfd0ca] border-stone-200',
     textClass: 'text-stone-800',
     borderClass: 'border-stone-300',
-    arrowColor: '#bfd0ca'
+    arrowColor: '#bfd0ca',
+    backgroundGradient: 'linear-gradient(-45deg, #fafaf9, #f5f5f4, #e7e5e4, #fafaf9)'
   },
   {
     id: 'shaymin',
@@ -43,61 +47,68 @@ export const OWNER_THEMES: Theme[] = [
     bubbleClass: 'bg-[#b8e986] border-lime-200',
     textClass: 'text-lime-900',
     borderClass: 'border-lime-300',
-    arrowColor: '#b8e986'
+    arrowColor: '#b8e986',
+    backgroundGradient: 'linear-gradient(-45deg, #f7fee7, #ecfccb, #d9f99d, #f7fee7)'
   },
   {
     id: 'chiikawa',
     name: '吉伊卡哇',
-    avatar: '/themes/chiikawa.png', // Using Pikachu as placeholder but styled as Chiikawa
+    avatar: '/themes/chiikawa.png',
     bubbleClass: 'bg-white border-pink-200',
     textClass: 'text-gray-800',
     borderClass: 'border-pink-300',
-    arrowColor: '#ffffff'
+    arrowColor: '#ffffff',
+    backgroundGradient: 'linear-gradient(-45deg, #fff1f2, #ffe4e6, #fecdd3, #fff1f2)'
   },
   {
     id: 'hachiware',
     name: '小八',
-    avatar: '/themes/hachiware.png', // Using Piplup as placeholder
+    avatar: '/themes/hachiware.png',
     bubbleClass: 'bg-[#daefff] border-blue-200',
     textClass: 'text-blue-900',
     borderClass: 'border-blue-300',
-    arrowColor: '#daefff'
+    arrowColor: '#daefff',
+    backgroundGradient: 'linear-gradient(-45deg, #eff6ff, #dbeafe, #bfdbfe, #eff6ff)'
   },
   {
     id: 'usagi',
     name: '乌萨奇',
-    avatar: '/themes/usagi.png', // Using Lopunny as placeholder
+    avatar: '/themes/usagi.png',
     bubbleClass: 'bg-[#fff5ba] border-yellow-200',
     textClass: 'text-yellow-900',
     borderClass: 'border-yellow-300',
-    arrowColor: '#fff5ba'
+    arrowColor: '#fff5ba',
+    backgroundGradient: 'linear-gradient(-45deg, #fefce8, #fef9c3, #fef08a, #fefce8)'
   },
   {
     id: 'doraemon',
     name: '哆啦A梦',
-    avatar: '/themes/doraemon.png', // Using Wooper as placeholder
+    avatar: '/themes/doraemon.png',
     bubbleClass: 'bg-[#3caeff] border-blue-300',
     textClass: 'text-white',
     borderClass: 'border-blue-400',
-    arrowColor: '#3caeff'
+    arrowColor: '#3caeff',
+    backgroundGradient: 'linear-gradient(-45deg, #ecfeff, #cffafe, #a5f3fc, #ecfeff)'
   },
   {
     id: 'backkom',
     name: '倒霉熊',
-    avatar: '/themes/backkom.png', // Using Teddiursa as placeholder
+    avatar: '/themes/backkom.png',
     bubbleClass: 'bg-gray-100 border-gray-300',
     textClass: 'text-gray-900',
     borderClass: 'border-gray-400',
-    arrowColor: '#f3f4f6'
+    arrowColor: '#f3f4f6',
+    backgroundGradient: 'linear-gradient(-45deg, #f8fafc, #f1f5f9, #e2e8f0, #f8fafc)'
   },
   {
     id: 'kirby',
     name: '星之卡比',
-    avatar: '/themes/kirby.png', // Using Jigglypuff as placeholder
+    avatar: '/themes/kirby.png',
     bubbleClass: 'bg-[#ffcce5] border-pink-200',
     textClass: 'text-pink-900',
     borderClass: 'border-pink-300',
-    arrowColor: '#ffcce5'
+    arrowColor: '#ffcce5',
+    backgroundGradient: 'linear-gradient(-45deg, #fff0f5, #fce7f3, #fbcfe8, #fff0f5)'
   }
 ]
 

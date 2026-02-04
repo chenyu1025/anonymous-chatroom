@@ -1,0 +1,50 @@
+# Project Rules (Universal Full-Stack)
+
+## 1. 全局原则 (Global Principles)
+- **KISS (Keep It Simple, Stupid)**: 优先选择最简单的实现方案。
+- **DRY (Don't Repeat Yourself)**: 严禁复制粘贴代码，提取公共逻辑。
+- **SOLID**: 遵循面向对象设计的 SOLID 原则，特别是单一职责原则。
+- **Security First**: 始终校验用户输入，默认不信任任何外部数据。
+- **Self-Correction First**: AI must verify its own code. If generated code fails tests, AI must fix it before asking the user.
+
+## 2. 语言规范 (Language Specifics)
+
+### TypeScript/JavaScript (Frontend/Node)
+- 必须使用 TypeScript，严禁使用 `any` 类型。
+- 优先使用 Functional Component (React) 和 Hooks。
+- 变量命名：
+  - 常量: `UPPER_CASE`
+  - 类/组件: `PascalCase`
+  - 变量/函数: `camelCase`
+
+## 3. 测试策略 (Testing Policy) - MANDATORY
+- **No Tests, No Merge**: 任何功能变更必须包含对应的测试。
+- **Coverage**: 核心业务逻辑测试覆盖率不得低于 80%。
+- **Naming**: 测试文件必须以 `.test.ts` 或 `.spec.ts` 结尾。
+- **Isolation**: 单元测试必须独立运行，不得依赖外部真实数据库（使用 Mock）。
+- **AI Self-Check**: AI generated code MUST include unit tests. AI MUST run these tests and fix any failures autonomously.
+
+### Workflow
+Every time a new feature is added or an existing feature is modified:
+1.  **Analyze Impact**: Determine which E2E tests are affected.
+2.  **Write/Update Tests**:
+    *   Locate E2E tests in `tests/e2e/`.
+    *   Write new `test(...)` cases in Playwright.
+3.  **Verify**:
+    *   Run `npm run test:e2e`.
+    *   **NEVER** submit code that breaks existing tests.
+
+## 4. 文档规范 (Documentation)
+- **Docstrings**: 所有 Public 函数和类必须有文档注释。
+- **README**: 每个模块/服务目录下应有 README 说明其职责。
+
+## 5. 项目特定信息 (Project Specifics)
+- **Framework**: Next.js 14 (App Router)
+- **Database**: Supabase
+- **Styling**: Tailwind CSS
+- **Testing**: Playwright (E2E), Jest (Unit)
+
+## 6. 常用命令 (Commands)
+- Run E2E Tests: `npm run test:e2e`
+- Run Unit Tests: `npm test`
+- Dev Server: `npm run dev`
