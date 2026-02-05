@@ -97,7 +97,7 @@ export default function Lobby() {
 
         {!isCreating && !createdRoomId && (
           <div className="space-y-4">
-            <button
+            {/* <button
               onClick={() => setShowWizardAuth(true)}
               className="w-full py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 group relative overflow-hidden"
             >
@@ -107,7 +107,7 @@ export default function Lobby() {
               </div>
               Enter Wizard's Room
               <ArrowRight size={18} className="text-white/80 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </button> */}
 
             <button
               onClick={() => setIsCreating(true)}
