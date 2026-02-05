@@ -12,16 +12,7 @@ export async function GET(request: NextRequest) {
       .from('messages')
       .select(`
         *,
-        users!inner(session_id, theme_id),
-        reply_to:messages!reply_to_id(
-          id,
-          content,
-          user_type,
-          type,
-          file_url,
-          created_at,
-          user_id
-        )
+        users!inner(session_id, theme_id)
       `)
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -35,6 +26,28 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query
+
+    // 手动填充引用消息，避免 PostgREST 自引用查询的方向问题
+    if (data && data.length > 0) {
+      const replyIds = Array.from(new Set(data.map((msg: any) => msg.reply_to_id).filter(Boolean)))
+
+      if (replyIds.length > 0) {
+        const { data: replyMessages } = await supabase
+          .from('messages')
+          .select('id, content, user_type, type, file_url, created_at, user_id')
+          .in('id', replyIds)
+
+        const replyMap = new Map(replyMessages?.map((msg: any) => [msg.id, msg]))
+
+        data.forEach((msg: any) => {
+          if (msg.reply_to_id && replyMap.has(msg.reply_to_id)) {
+            msg.reply_to = replyMap.get(msg.reply_to_id)
+          } else {
+            msg.reply_to = null
+          }
+        })
+      }
+    }
 
     if (error) {
       console.error('获取消息错误:', error)
