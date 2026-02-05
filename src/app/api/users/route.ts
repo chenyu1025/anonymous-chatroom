@@ -4,7 +4,7 @@ import { getSessionId } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
   try {
-    const { userType, sessionId: clientSessionId, themeId } = await request.json()
+    const { userType, sessionId: clientSessionId, themeId, roomId } = await request.json()
     // 优先使用客户端传来的 sessionId，因为服务端无法访问 localStorage
     const sessionId = clientSessionId
 
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       const updates: any = {
         is_online: true,
         last_seen: new Date().toISOString(),
+        room_id: roomId || null
       }
 
       if (themeId) {
@@ -61,7 +62,8 @@ export async function POST(request: NextRequest) {
           user_type: userType || 'guest',
           is_online: true,
           last_seen: new Date().toISOString(),
-          theme_id: themeId || undefined
+          theme_id: themeId || undefined,
+          room_id: roomId || null
         }
       ])
       .select()
@@ -85,16 +87,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const roomId = searchParams.get('roomId')
+
     // 定义在线的阈值（例如 2 分钟内活跃过）
     const fiveMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('users')
-      .select('id, user_type, is_online, last_seen, theme_id')
+      .select('id, user_type, is_online, last_seen, theme_id, room_id')
       .eq('is_online', true)
       .gt('last_seen', fiveMinutesAgo) // 增加时间过滤
+
+    if (roomId) {
+      query = query.eq('room_id', roomId)
+    } else {
+      query = query.is('room_id', null)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('获取在线用户错误:', error)

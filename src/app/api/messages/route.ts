@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '50')
     const before = searchParams.get('before')
+    const roomId = searchParams.get('roomId')
 
     let query = supabase
       .from('messages')
@@ -16,6 +17,12 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false })
       .limit(limit)
+
+    if (roomId) {
+      query = query.eq('room_id', roomId)
+    } else {
+      query = query.is('room_id', null)
+    }
 
     if (before) {
       // 确保 before 是有效的时间戳格式
@@ -69,7 +76,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, content, userType, userId, type = 'text', fileUrl, replyToId } = await request.json()
+    const { id, content, userType, userId, type = 'text', fileUrl, replyToId, roomId } = await request.json()
 
     if ((!content && !fileUrl) || !userType || !userId) {
       return NextResponse.json(
@@ -112,7 +119,8 @@ export async function POST(request: NextRequest) {
           user_type: userType,
           type,
           file_url: fileUrl,
-          reply_to_id: replyToId
+          reply_to_id: replyToId,
+          room_id: roomId || null
         }
       ])
       .select()
