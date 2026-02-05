@@ -31,27 +31,6 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   const startYRef = useRef(0)
   const shouldCancelRef = useRef(false)
   const [isCanceling, setIsCanceling] = useState(false)
-  const [typingParticles, setTypingParticles] = useState<{ id: number; x: number; y: number }[]>([])
-
-  useEffect(() => {
-    if (!message) return
-
-    // 当输入内容时，随机生成魔法粒子
-    const particleId = Date.now()
-    const newParticle = {
-      id: particleId,
-      x: Math.random() * 80 + 10, // 10% - 90%
-      y: Math.random() * 20 + 40, // 40% - 60%
-    }
-
-    setTypingParticles(prev => [...prev, newParticle])
-
-    const timeout = setTimeout(() => {
-      setTypingParticles(prev => prev.filter(p => p.id !== particleId))
-    }, 1000)
-
-    return () => clearTimeout(timeout)
-  }, [message])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -355,20 +334,6 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex-1 flex space-x-3 min-w-0 group/input relative">
-              {/* 魔法打字效果 */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-full">
-                {typingParticles.map(p => (
-                  <div
-                    key={p.id}
-                    className="absolute w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping opacity-60"
-                    style={{
-                      left: `${p.x}%`,
-                      top: `${p.y}%`,
-                      animationDuration: '0.8s'
-                    }}
-                  />
-                ))}
-              </div>
               <input
                 type="text"
                 value={message}
