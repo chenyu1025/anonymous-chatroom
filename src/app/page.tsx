@@ -11,7 +11,10 @@ export default function Lobby() {
   const [isCreating, setIsCreating] = useState(false)
   const [password, setPassword] = useState('')
   const [createdRoomId, setCreatedRoomId] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [guestLink, setGuestLink] = useState('')
+  const [ownerLink, setOwnerLink] = useState('')
+  const [copiedGuest, setCopiedGuest] = useState(false)
+  const [copiedOwner, setCopiedOwner] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,7 +43,14 @@ export default function Lobby() {
         throw new Error(data.error || 'Failed to create room')
       }
 
+      if (!data.roomId) {
+        throw new Error('Server returned no Room ID')
+      }
+
       setCreatedRoomId(data.roomId)
+      const origin = window.location.origin
+      setGuestLink(`${origin}/room/${data.roomId}`)
+      setOwnerLink(`${origin}/room/${data.roomId}?auth=owner`)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -48,15 +58,15 @@ export default function Lobby() {
     }
   }
 
-  const getShareLink = () => {
-    if (typeof window === 'undefined') return ''
-    return `${window.location.origin}/room/${createdRoomId}`
-  }
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(getShareLink())
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopyLink = (text: string, isOwner: boolean) => {
+    navigator.clipboard.writeText(text)
+    if (isOwner) {
+      setCopiedOwner(true)
+      setTimeout(() => setCopiedOwner(false), 2000)
+    } else {
+      setCopiedGuest(true)
+      setTimeout(() => setCopiedGuest(false), 2000)
+    }
   }
 
   const handleWizardEntry = (e: React.FormEvent) => {
@@ -159,29 +169,59 @@ export default function Lobby() {
                 <Check size={24} />
               </div>
               <h2 className="text-xl font-semibold text-gray-800">Room Created!</h2>
-              <p className="text-sm text-gray-500 mt-1">Share this link with your friends</p>
+              <p className="text-sm text-gray-500 mt-1">Share these links to invite others</p>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center gap-3">
-              <code className="flex-1 text-sm text-gray-600 truncate">
-                {getShareLink()}
-              </code>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 ml-1 mb-1 block">Guest Link (No Password)</label>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex items-center gap-3">
+                  <code className="flex-1 text-sm text-gray-600 truncate">
+                    {guestLink}
+                  </code>
+                  <button
+                    onClick={() => handleCopyLink(guestLink, false)}
+                    className={`p-2 rounded-lg transition-colors ${copiedGuest ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'
+                      }`}
+                    title="Copy Guest Link"
+                  >
+                    {copiedGuest ? <Check size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-purple-600 ml-1 mb-1 block">Owner Link (Requires Password)</label>
+                <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 flex items-center gap-3">
+                  <code className="flex-1 text-sm text-purple-700 truncate">
+                    {ownerLink}
+                  </code>
+                  <button
+                    onClick={() => handleCopyLink(ownerLink, true)}
+                    className={`p-2 rounded-lg transition-colors ${copiedOwner ? 'bg-green-100 text-green-600' : 'hover:bg-purple-200 text-purple-600'
+                      }`}
+                    title="Copy Owner Link"
+                  >
+                    {copiedOwner ? <Check size={18} /> : <Copy size={18} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={handleCopyLink}
-                className={`p-2 rounded-lg transition-colors ${copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-200 text-gray-500'
-                  }`}
-                title="Copy Link"
+                onClick={() => router.push(ownerLink)}
+                className="py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-colors"
               >
-                {copied ? <Check size={18} /> : <Copy size={18} />}
+                Enter as Owner
+              </button>
+              <button
+                onClick={() => router.push(guestLink)}
+                className="py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Enter as Guest
               </button>
             </div>
-
-            <button
-              onClick={() => router.push(`/room/${createdRoomId}`)}
-              className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Enter Room
-            </button>
           </div>
         )}
         {showWizardAuth && (

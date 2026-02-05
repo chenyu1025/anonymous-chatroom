@@ -15,12 +15,14 @@ export const getSessionId = (): string => {
   }
 }
 
-export const getUserType = (): 'owner' | 'guest' => {
+export const getUserType = (roomId?: string | null): 'owner' | 'guest' => {
   if (typeof window === 'undefined') return 'guest'
-  return localStorage.getItem('chatroom_user_type') as 'owner' | 'guest' || 'guest'
+  const key = roomId ? `chatroom_user_type_${roomId}` : 'chatroom_user_type'
+  return localStorage.getItem(key) as 'owner' | 'guest' || 'guest'
 }
 
-export const setUserType = (userType: 'owner' | 'guest') => {
+export const setUserType = (userType: 'owner' | 'guest', roomId?: string | null) => {
   if (typeof window === 'undefined') return
-  localStorage.setItem('chatroom_user_type', userType)
+  const key = roomId ? `chatroom_user_type_${roomId}` : 'chatroom_user_type'
+  localStorage.setItem(key, userType)
 }

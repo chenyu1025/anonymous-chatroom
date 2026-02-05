@@ -24,9 +24,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create room' }, { status: 500 })
     }
 
+    if (!data) {
+      console.error('Create room error: No data returned')
+      return NextResponse.json({ error: 'Failed to create room (no data)' }, { status: 500 })
+    }
+
     return NextResponse.json({ roomId: data.id })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create room exception:', error)
-    return NextResponse.json({ error: 'Internal Error' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Internal Error' }, { status: 500 })
   }
 }

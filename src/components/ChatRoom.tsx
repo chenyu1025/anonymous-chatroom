@@ -7,7 +7,7 @@ import MessageBubble from '@/components/MessageBubble'
 import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
 import { Message } from '@/lib/types'
-import { getSessionId, getUserType } from '@/lib/session'
+import { getSessionId, getUserType, setUserType as setSessionUserType } from '@/lib/session'
 import { Settings, X, Palette, LogOut, ChevronDown, Plus } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
@@ -88,7 +88,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   // 初始化用户
   useEffect(() => {
     const sessionId = getSessionId()
-    const type = getUserType()
+    const type = getUserType(roomId)
     setCurrentUserId(sessionId)
     setUserType(type)
     setLoading(false)
@@ -316,19 +316,19 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
           table: 'users'
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-           // Filter for current room
-           const newUser = payload.new as any
-           // If it's a delete event, newUser might be null or old might be present
-           // For simplicity, we just refetch online users
-           // But strictly, we should check room_id.
-           // Since we fetch online users anyway, and that API filters by room, we can just trigger fetch.
-           // But to avoid unnecessary fetches for other rooms' activity:
-           const relevantRoomId = (payload.new as any)?.room_id || (payload.old as any)?.room_id
-           
-           // If room_id is null in DB, it matches roomId=null.
-           if (relevantRoomId === (roomId || null)) {
-             fetchOnlineUsers()
-           }
+          // Filter for current room
+          const newUser = payload.new as any
+          // If it's a delete event, newUser might be null or old might be present
+          // For simplicity, we just refetch online users
+          // But strictly, we should check room_id.
+          // Since we fetch online users anyway, and that API filters by room, we can just trigger fetch.
+          // But to avoid unnecessary fetches for other rooms' activity:
+          const relevantRoomId = (payload.new as any)?.room_id || (payload.old as any)?.room_id
+
+          // If room_id is null in DB, it matches roomId=null.
+          if (relevantRoomId === (roomId || null)) {
+            fetchOnlineUsers()
+          }
         }
       )
       .on(
@@ -340,14 +340,14 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
         },
         (payload: RealtimePostgresChangesPayload<Message>) => {
           const newMessage = payload.new as Message
-          
+
           // Filter by room
           if (newMessage.room_id !== (roomId || null)) return
 
           // 检查是否为隐藏的主题切换动作
           if (newMessage.content && newMessage.content.startsWith('ACTION:THEME_CHANGE:')) {
             const newThemeId = newMessage.content.split(':')[2]
-            const isGuest = localStorage.getItem('chatroom_user_type') !== 'owner'
+            const isGuest = getUserType(roomId) !== 'owner'
 
             // 如果我是访客，且消息来自主人，且有主题ID
             if (isGuest && newMessage.user_type === 'owner' && newThemeId) {
@@ -468,13 +468,13 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
           const newUser = payload.new
-          
+
           // Filter by room
           if (newUser.room_id !== (roomId || null)) return
-          
+
           if (newUser && newUser.id && newUser.theme_id) {
             // 如果更新的是主人，且当前用户是访客，则同步全局主题
-            const isGuest = localStorage.getItem('chatroom_user_type') !== 'owner'
+            const isGuest = getUserType(roomId) !== 'owner'
 
             // 判定是否为 owner 更新：
             // 1. 明确标记为 owner
@@ -723,7 +723,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   // 退出主人模式
   const handleLogout = () => {
     if (confirm('确定要退出主人模式吗？')) {
-      localStorage.setItem('chatroom_user_type', 'guest')
+      setSessionUserType('guest', roomId)
       setUserType('guest')
       window.location.reload()
     }
@@ -811,8 +811,13 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
 
             {userType === 'guest' && (
               <button
-                onClick={() => router.push('/auth/owner')}
+                onClick={() => {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('auth', 'owner')
+                  window.location.href = url.toString()
+                }}
                 className="text-purple-600 hover:text-purple-700"
+                title="切换为房主"
               >
                 <Settings size={20} />
               </button>

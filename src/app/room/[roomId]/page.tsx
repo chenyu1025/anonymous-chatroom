@@ -1,14 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import ChatRoom from '@/components/ChatRoom'
 import { Lock, ArrowRight } from 'lucide-react'
 import ClickSparkles from '@/components/ClickSparkles'
 import FluidCursorTrail from '@/components/FluidCursorTrail'
+import { getUserType, setUserType } from '@/lib/session'
 
 export default function RoomPage({ params }: { params: { roomId: string } }) {
   const { roomId } = params
-  const [isVerified, setIsVerified] = useState(false)
+  const searchParams = useSearchParams()
+  const authMode = searchParams.get('auth')
+  
+  const [shouldShowPassword, setShouldShowPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -21,12 +26,16 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
 
   // Check verification
   useEffect(() => {
-    const verified = localStorage.getItem(`room_access_${roomId}`)
-    if (verified === 'true') {
-      setIsVerified(true)
+    const userType = getUserType(roomId)
+    // If user wants to be owner but isn't one yet -> show password
+    if (authMode === 'owner' && userType !== 'owner') {
+      setShouldShowPassword(true)
+    } else {
+      // Otherwise (Guest, or already Owner) -> enter directly
+      setShouldShowPassword(false)
     }
     setChecking(false)
-  }, [roomId])
+  }, [roomId, authMode])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,8 +55,10 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
         throw new Error(data.error || 'Verification failed')
       }
 
-      localStorage.setItem(`room_access_${roomId}`, 'true')
-      setIsVerified(true)
+      setUserType('owner', roomId)
+      setShouldShowPassword(false)
+      // Optional: Clean up URL
+      // router.replace(`/room/${roomId}`) 
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -55,7 +66,7 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
     }
   }
 
-  if (roomId === 'public' || isVerified) {
+  if (roomId === 'public' || (!checking && !shouldShowPassword)) {
     return <ChatRoom roomId={roomId === 'public' ? null : roomId} />
   }
 
