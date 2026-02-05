@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import Image from 'next/image'
 import { Send, Image as ImageIcon, Mic, Square, Loader2, Plus, X, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { AudioRecorder } from '@/lib/audio-recorder'
@@ -224,9 +225,25 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
             <span className="text-xs font-bold text-purple-600 mb-0.5">
               回复 {replyingTo.user_type === 'owner' ? '主人' : '匿名用户'}
             </span>
-            <span className="text-xs text-gray-500 truncate">
-              {replyingTo.type === 'image' ? '[图片]' : replyingTo.type === 'audio' ? '[语音]' : replyingTo.content}
-            </span>
+            <div className="text-xs text-gray-500 truncate">
+              {replyingTo.type === 'image' ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <span>[图片]</span>
+                  {replyingTo.file_url && (
+                    <div className="relative w-10 h-10 rounded overflow-hidden border border-gray-200">
+                      <Image
+                        src={replyingTo.file_url}
+                        alt="引用图片"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : replyingTo.type === 'audio' ? '[语音]' : (
+                replyingTo.content
+              )}
+            </div>
           </div>
           <button
             onClick={onCancelReply}

@@ -260,9 +260,24 @@ function MessageBubble({ message, isCurrentUser, userType, viewerType, onReply }
                 {message.reply_to.user_type === 'owner' ? '主人' : '匿名用户'}
               </div>
               <div className="truncate opacity-80">
-                {message.reply_to.type === 'image' ? '[图片]' :
-                  message.reply_to.type === 'audio' ? '[语音]' :
-                    message.reply_to.content}
+                {message.reply_to.type === 'image' ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span>[图片]</span>
+                    {message.reply_to.file_url && (
+                      <div className="relative w-16 h-16 rounded overflow-hidden border border-black/10 bg-black/5">
+                        <Image
+                          src={message.reply_to.file_url}
+                          alt="引用图片"
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : message.reply_to.type === 'audio' ? '[语音]' : (
+                  message.reply_to.content
+                )}
               </div>
             </div>
           )}
