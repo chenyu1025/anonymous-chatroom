@@ -86,13 +86,17 @@ export default function Lobby() {
 
       <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/50 animate-in fade-in zoom-in duration-500">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4 rotate-3 hover:rotate-6 transition-transform">
+          <div
+            onClick={() => setShowWizardAuth(true)}
+            className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4 rotate-3 hover:rotate-6 transition-transform cursor-pointer hover:scale-110 active:scale-95"
+            title="???"
+          >
             <MessageCircle className="text-white w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
             Chatroom
           </h1>
-          <p className="text-gray-500 mt-2">Create a private space or enter the Wizard's Room</p>
+          <p className="text-gray-500 mt-2">Create a private space</p>
         </div>
 
         {!isCreating && !createdRoomId && (
