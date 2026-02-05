@@ -315,7 +315,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
           schema: 'public',
           table: 'users'
         },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<any>) => {
            // Filter for current room
            const newUser = payload.new as any
            // If it's a delete event, newUser might be null or old might be present
