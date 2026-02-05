@@ -8,7 +8,7 @@ import MessageInput from '@/components/MessageInput'
 import { supabase } from '@/lib/supabase'
 import { Message } from '@/lib/types'
 import { getSessionId, getUserType, setUserType as setSessionUserType } from '@/lib/session'
-import { Settings, X, Palette, LogOut, ChevronDown, Plus } from 'lucide-react'
+import { Settings, X, Palette, LogOut, ChevronDown, Plus, Share2, Check } from 'lucide-react'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import ThemeSelector from '@/components/ThemeSelector'
 import { DEFAULT_THEME_ID, OWNER_THEMES } from '@/lib/themes'
@@ -32,6 +32,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   const [showThemeSelector, setShowThemeSelector] = useState(false)
   const [currentThemeId, setCurrentThemeId] = useState(DEFAULT_THEME_ID)
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
+  const [showCopiedToast, setShowCopiedToast] = useState(false)
 
   // 全屏特效状态
   const [fullScreenEffect, setFullScreenEffect] = useState<FullScreenEffectType>('none')
@@ -729,6 +730,15 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
     }
   }
 
+  // 复制访客链接
+  const handleShareRoom = () => {
+    if (!roomId || typeof window === 'undefined') return
+    const url = `${window.location.origin}/room/${roomId}`
+    navigator.clipboard.writeText(url)
+    setShowCopiedToast(true)
+    setTimeout(() => setShowCopiedToast(false), 2000)
+  }
+
   if (loading) {
     return (
       <div className="h-[100dvh] animate-gradient-soft flex flex-col overflow-hidden">
@@ -800,6 +810,21 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               <Users size={16} />
               <span className="text-sm">{onlineUsers}</span>
             </div> */}
+
+            {roomId && (
+              <button
+                onClick={handleShareRoom}
+                className="text-gray-600 hover:text-purple-600 flex items-center gap-1 relative"
+                title="分享房间链接"
+              >
+                {showCopiedToast ? <Check size={20} className="text-green-500" /> : <Share2 size={20} />}
+                {showCopiedToast && (
+                  <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap animate-in fade-in zoom-in duration-200">
+                    已复制
+                  </span>
+                )}
+              </button>
+            )}
 
             <button
               onClick={() => router.push('/')}
