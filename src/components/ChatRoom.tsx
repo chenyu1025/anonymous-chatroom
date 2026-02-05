@@ -36,6 +36,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
 
   // 全屏特效状态
   const [fullScreenEffect, setFullScreenEffect] = useState<FullScreenEffectType>('none')
+  const [effectKey, setEffectKey] = useState(0)
 
   // 使用 ref 来追踪最新状态，以便在闭包中使用
   const currentThemeIdRef = useRef(DEFAULT_THEME_ID)
@@ -406,6 +407,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               const easterEgg = getEasterEgg(newMessage.content)
               if (easterEgg && easterEgg.fullScreen) {
                 setFullScreenEffect(easterEgg.fullScreen)
+                setEffectKey(Date.now())
               }
             }
           }
@@ -568,6 +570,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
         const easterEgg = getEasterEgg(content)
         if (easterEgg && easterEgg.fullScreen) {
           setFullScreenEffect(easterEgg.fullScreen)
+          setEffectKey(Date.now())
         }
       }
 
@@ -784,7 +787,11 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
       {/* <BackgroundParticles /> */}
       <ClickSparkles />
       <FluidCursorTrail />
-      <FullScreenEffects type={fullScreenEffect} onComplete={() => setFullScreenEffect('none')} />
+      <FullScreenEffects
+        key={effectKey}
+        type={fullScreenEffect}
+        onComplete={() => setFullScreenEffect('none')}
+      />
       {/* 头部 */}
       <header className="glass shadow-sm px-4 py-3 z-10 relative">
         <div className="flex items-center justify-between">
