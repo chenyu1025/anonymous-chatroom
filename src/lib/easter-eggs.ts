@@ -119,20 +119,17 @@ export const EASTER_EGGS: EasterEggConfig[] = [
 export function getEasterEgg(content: string): EasterEggConfig | null {
   if (!content) return null
 
-  // 0. 检查 Emoji Storm 触发条件 (单个 Emoji 重复 3 次以上)
-  // 简化版正则，匹配非ASCII字符重复3次以上
-  // 这是一个近似解法，因为 JS 的 Emoji 正则比较复杂，这里假设用户输入的非ASCII重复字符就是 Emoji
-  const emojiStormRegex = /^([^\x00-\x7F])\1{2,}$/
-  const match = content.match(emojiStormRegex)
-
-  if (match) {
-    return {
-      keywords: [], // Dynamic trigger
-      effect: 'confetti', // Base effect
-      fullScreen: 'emoji-storm',
-      emoji: match[1] // Capture the specific emoji
-    }
-  }
+  // 0. 检查 Emoji Storm 触发条件 (单个 Emoji 重复 3 次以上) -> 已根据用户要求移除 (2025-02-05)
+  // const emojiStormRegex = /^([^\x00-\x7F])\1{2,}$/
+  // const match = content.match(emojiStormRegex)
+  // if (match) {
+  //   return {
+  //     keywords: [],
+  //     effect: 'confetti',
+  //     fullScreen: 'emoji-storm',
+  //     emoji: match[1]
+  //   }
+  // }
 
   const lowerContent = content.toLowerCase()
   const now = new Date()
