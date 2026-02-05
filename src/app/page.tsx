@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, MessageCircle, Copy, Check, ArrowRight, Lock } from 'lucide-react'
+import { Plus, MessageCircle, Copy, Check, ArrowRight, Lock, X } from 'lucide-react'
 import ClickSparkles from '@/components/ClickSparkles'
 import FluidCursorTrail from '@/components/FluidCursorTrail'
 
@@ -14,6 +14,11 @@ export default function Lobby() {
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Wizard Auth State
+  const [showWizardAuth, setShowWizardAuth] = useState(false)
+  const [wizardInput, setWizardInput] = useState('')
+  const [wizardError, setWizardError] = useState(false)
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +59,16 @@ export default function Lobby() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleWizardEntry = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (wizardInput.trim() === '是重要的') {
+      router.push('/room/public')
+    } else {
+      setWizardError(true)
+      setTimeout(() => setWizardError(false), 2000)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <ClickSparkles />
@@ -73,7 +88,7 @@ export default function Lobby() {
         {!isCreating && !createdRoomId && (
           <div className="space-y-4">
             <button
-              onClick={() => router.push('/room/public')}
+              onClick={() => setShowWizardAuth(true)}
               className="w-full py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 group relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -167,6 +182,59 @@ export default function Lobby() {
             >
               Enter Room
             </button>
+          </div>
+        )}
+        {showWizardAuth && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl w-full max-w-md relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <button
+                onClick={() => setShowWizardAuth(false)}
+                className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-purple-100 rounded-full mx-auto flex items-center justify-center mb-6">
+                  <span className="text-3xl">🧙‍♂️</span>
+                </div>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Wizard's Riddle</h3>
+                <p className="text-gray-500 text-sm mb-6">只有解开谜题的人才能进入</p>
+
+                <form onSubmit={handleWizardEntry} className="space-y-4">
+                  <div className="flex items-center justify-center gap-2 text-lg font-medium text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <span>只有一件事</span>
+                    <input
+                      type="text"
+                      value={wizardInput}
+                      onChange={(e) => {
+                        setWizardInput(e.target.value)
+                        setWizardError(false)
+                      }}
+                      className={`w-24 bg-transparent border-b-2 focus:outline-none text-center transition-colors ${wizardError ? 'border-red-500 text-red-600' : 'border-purple-300 focus:border-purple-500'
+                        }`}
+                      placeholder="____"
+                      maxLength={4}
+                      autoFocus
+                    />
+                  </div>
+
+                  {wizardError && (
+                    <p className="text-red-500 text-sm animate-pulse">
+                      不对哦，再想想...
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.98] mt-4"
+                  >
+                    Confirm
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         )}
       </div>
