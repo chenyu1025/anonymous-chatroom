@@ -11,8 +11,8 @@ describe('Easter Eggs', () => {
   it('should match keywords correctly', () => {
     const egg = getEasterEgg('我刚才在捡手机');
     expect(egg).not.toBeNull();
-    expect(egg?.effect).toBe('confetti');
-    expect(egg?.fullScreen).toBe('sakura-breeze');
+    expect(egg?.effect).toBe('glow');
+    expect(egg?.fullScreen).toBe('zero-gravity');
   });
 
   it('should match keywords case-insensitively', () => {

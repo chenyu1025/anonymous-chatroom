@@ -17,6 +17,7 @@ import FluidCursorTrail from '@/components/FluidCursorTrail'
 import { soundManager } from '@/lib/sound'
 import { FullScreenEffectType, getEasterEgg } from '@/lib/easter-eggs'
 import FullScreenEffects from '@/components/FullScreenEffects'
+import { isVirtuosoAtBottom } from '@/lib/virtuoso-scroll'
 
 interface ChatRoomProps {
   roomId?: string | null
@@ -69,6 +70,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const isLoadingMoreRef = useRef(false)
   const isAtBottomRef = useRef(true)
+  const atBottomStateRef = useRef(true)
 
   const router = useRouter()
 
@@ -610,6 +612,18 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
     virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' })
   }
 
+  const setAtBottomState = (atBottom: boolean) => {
+    if (atBottomStateRef.current === atBottom) return
+    atBottomStateRef.current = atBottom
+    isAtBottomRef.current = atBottom
+    setShowScrollToBottom(!atBottom)
+  }
+
+  const handleRangeChanged = (range: { startIndex: number; endIndex: number }) => {
+    const atBottom = isVirtuosoAtBottom({ endIndex: range.endIndex, itemCount: messages.length })
+    setAtBottomState(atBottom)
+  }
+
   // 加载更多消息
   const loadMoreMessages = async () => {
     if (isLoadingMore || !hasMore || messages.length === 0) return
@@ -905,10 +919,8 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
           ref={virtuosoRef}
           data={messages}
           initialTopMostItemIndex={messages.length - 1}
-          atBottomStateChange={(atBottom) => {
-            isAtBottomRef.current = atBottom
-            setShowScrollToBottom(!atBottom)
-          }}
+          atBottomStateChange={setAtBottomState}
+          rangeChanged={handleRangeChanged}
           startReached={() => {
             if (hasMore && !isLoadingMore) {
               loadMoreMessages()
