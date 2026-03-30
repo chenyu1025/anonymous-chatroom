@@ -17,7 +17,6 @@ import FluidCursorTrail from '@/components/FluidCursorTrail'
 import { soundManager } from '@/lib/sound'
 import { FullScreenEffectType, getEasterEgg } from '@/lib/easter-eggs'
 import FullScreenEffects from '@/components/FullScreenEffects'
-import { isVirtuosoAtBottom } from '@/lib/virtuoso-scroll'
 
 interface ChatRoomProps {
   roomId?: string | null
@@ -69,7 +68,6 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
 
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const isLoadingMoreRef = useRef(false)
-  const isAtBottomRef = useRef(true)
   const atBottomStateRef = useRef(true)
 
   const router = useRouter()
@@ -615,13 +613,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   const setAtBottomState = (atBottom: boolean) => {
     if (atBottomStateRef.current === atBottom) return
     atBottomStateRef.current = atBottom
-    isAtBottomRef.current = atBottom
     setShowScrollToBottom(!atBottom)
-  }
-
-  const handleRangeChanged = (range: { startIndex: number; endIndex: number }) => {
-    const atBottom = isVirtuosoAtBottom({ endIndex: range.endIndex, itemCount: messages.length })
-    setAtBottomState(atBottom)
   }
 
   // 加载更多消息
@@ -724,8 +716,8 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
         (!!lastMessage.users?.session_id && lastMessage.users.session_id === currentUserId)
       )
 
-      // 如果是自己发的消息，或者当前就在底部，则滚动到底部
-      if (isMyMessage || isAtBottomRef.current) {
+      // 如果是自己发的消息，则强制滚动到底部 (其他人的消息由 followOutput 处理)
+      if (isMyMessage) {
         // 使用 setTimeout 确保渲染完成后滚动
         setTimeout(scrollToBottom, 50)
       }
@@ -920,7 +912,8 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
           data={messages}
           initialTopMostItemIndex={messages.length - 1}
           atBottomStateChange={setAtBottomState}
-          rangeChanged={handleRangeChanged}
+          atBottomThreshold={50}
+          followOutput={(isAtBottom) => isAtBottom ? 'smooth' : false}
           startReached={() => {
             if (hasMore && !isLoadingMore) {
               loadMoreMessages()
