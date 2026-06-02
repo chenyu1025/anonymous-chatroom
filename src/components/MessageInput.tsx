@@ -30,7 +30,31 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   const audioRecorderRef = useRef<AudioRecorder | null>(null)
   const startYRef = useRef(0)
   const shouldCancelRef = useRef(false)
+  const isPressingRef = useRef(false)
+  const isRecordingRef = useRef(false)
+  const recordStartTimeRef = useRef<number>(0)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // 监听应用切后台、失焦等系统级中断事件
+  useEffect(() => {
+    const handleSystemInterrupt = () => {
+      if (isRecordingRef.current) {
+        shouldCancelRef.current = true
+        stopRecording()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleSystemInterrupt)
+    window.addEventListener('blur', handleSystemInterrupt)
+    window.addEventListener('pagehide', handleSystemInterrupt)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleSystemInterrupt)
+      window.removeEventListener('blur', handleSystemInterrupt)
+      window.removeEventListener('pagehide', handleSystemInterrupt)
+    }
+  }, [])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -100,6 +124,7 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
     }
     shouldCancelRef.current = false
     setIsCanceling(false)
+    isPressingRef.current = true
 
     try {
       // 初始化录音器
@@ -110,30 +135,63 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
       recorder.initContext()
 
       await recorder.start()
+
+      // 如果此时用户已经松开，就立刻停止并退出，不进入录音状态
+      if (!isPressingRef.current) {
+        recorder.stop().catch(console.error)
+        audioRecorderRef.current = null
+        return
+      }
+
+      recordStartTimeRef.current = Date.now()
+      isRecordingRef.current = true
       setIsRecording(true)
     } catch (error: any) {
       console.error('Error accessing microphone:', error)
-      alert(error.message || '无法访问麦克风')
+      if (isPressingRef.current) {
+        alert(error.message || '无法访问麦克风')
+      }
+      isPressingRef.current = false
     }
   }
 
   const stopRecording = async () => {
-    if (audioRecorderRef.current && isRecording) {
-      const result = await audioRecorderRef.current.stop()
-      setIsRecording(false)
-      setIsCanceling(false)
+    isPressingRef.current = false
 
-      if (shouldCancelRef.current) {
-        console.log('Recording cancelled')
-        return
+    if (audioRecorderRef.current && isRecordingRef.current) {
+      const recorder = audioRecorderRef.current
+      audioRecorderRef.current = null
+      isRecordingRef.current = false
+
+      try {
+        const result = await recorder.stop()
+        setIsRecording(false)
+        setIsCanceling(false)
+
+        if (shouldCancelRef.current) {
+          console.log('Recording cancelled')
+          return
+        }
+
+        const duration = Date.now() - recordStartTimeRef.current
+        if (duration < 500) {
+          console.log('Recording too short')
+          setToastMessage('说话时间太短')
+          setTimeout(() => setToastMessage(null), 1500)
+          return
+        }
+
+        setRecordedAudio(result)
+      } catch (error) {
+        console.error('Stop recording error:', error)
+        setIsRecording(false)
+        setIsCanceling(false)
       }
-
-      setRecordedAudio(result)
     }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isRecording) return
+    if (!isRecordingRef.current) return
 
     const currentY = e.touches[0].clientY
     const diff = startYRef.current - currentY
@@ -149,7 +207,8 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
   }
 
   const handleMouseLeave = () => {
-    if (isRecording) {
+    isPressingRef.current = false
+    if (isRecordingRef.current) {
       shouldCancelRef.current = true
       stopRecording()
     }
@@ -198,6 +257,13 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
 
   return (
     <div className="glass border-t-0 relative pb-4 pt-2">
+      {/* Toast 提示 */}
+      {toastMessage && (
+        <div className="absolute left-1/2 -translate-x-1/2 -top-12 bg-gray-800/90 text-white px-4 py-2 rounded-full text-sm whitespace-nowrap z-50 animate-in fade-in slide-in-from-bottom-2 shadow-lg backdrop-blur-sm">
+          {toastMessage}
+        </div>
+      )}
+
       {replyingTo && (
         <div className="flex items-center justify-between px-4 py-2 mx-4 mb-2 bg-white/50 backdrop-blur-sm rounded-lg border border-white/20">
           <div className="flex flex-col overflow-hidden mr-4">
@@ -316,6 +382,15 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
                 onTouchMove={(e) => {
                   e.preventDefault();
                   handleTouchMove(e);
+                }}
+                onTouchCancel={(e) => {
+                  e.preventDefault();
+                  shouldCancelRef.current = true;
+                  stopRecording();
+                }}
+                onContextMenu={(e) => {
+                  // 移动端长按常常会触发右键菜单，需要阻止
+                  e.preventDefault();
                 }}
                 className={`flex-1 p-3 rounded-xl flex items-center justify-center space-x-2 transition-colors whitespace-nowrap select-none touch-none ${isRecording
                   ? (isCanceling ? 'bg-red-600 text-white' : 'bg-red-500 text-white')
