@@ -82,8 +82,8 @@ export default function MessageInput({ onSendMessage, disabled, userType, replyi
       let fileToUpload: File | Blob = file
       let fileExt = file.name.split('.').pop()
 
-      // 如果是图片，尝试压缩
-      if (file.type.startsWith('image/')) {
+      // 如果是图片且不是 GIF，尝试压缩（GIF 压缩会丢失动画）
+      if (file.type.startsWith('image/') && file.type !== 'image/gif') {
         try {
           const compressedBlob = await compressImage(file)
           fileToUpload = compressedBlob
