@@ -1,0 +1,66 @@
+src/components/MessageInput.tsx
+  s_80f5f8330679f3::t_227caf50c3a6b0 85-86 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a478652b1dff895988af094","tool_type":"agent","tool_id":"SearchReplace","line_ranges":[{"Range":[85,86]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "015e262bf0ff935e24703554db3505c14f18baf9",
+  "prompts": {},
+  "sessions": {
+    "s_80f5f8330679f3": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "69ca295877279b946d9807ee",
+        "model": "gemini-3.1-pro__dev"
+      },
+      "human_author": "chenyu.1025 <chenyu.1025@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "src/components/MessageInput.tsx": [
+      {
+        "hash": "s_80f5f8330679f3::t_227caf50c3a6b0",
+        "line_ranges": [
+          {
+            "Range": [
+              85,
+              86
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a478652b1dff895988af094",
+            "tool_type": "agent",
+            "tool_id": "SearchReplace",
+            "line_ranges": [
+              {
+                "Range": [
+                  85,
+                  86
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_80f5f8330679f3": {
+      "tool": "trae",
+      "conversation_id": "69ca295877279b946d9807ee",
+      "session_id": "69ca295877279b946d9807ee",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_80f5f8330679f3::t_227caf50c3a6b0": {
+      "tool": "trae",
+      "conversation_id": "69ca295877279b946d9807ee",
+      "session_id": "69ca295877279b946d9807ee",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
