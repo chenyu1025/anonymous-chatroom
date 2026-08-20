@@ -168,16 +168,8 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, data.user.theme_id)
             }
           } else {
-            // 如果是访客，也优先保留本地主题，防止刷新时闪烁回默认主题
-            // 后续的 fetch('/api/users') 会负责同步最新的 Owner 主题
-            if (savedThemeId) {
-              // 保持使用本地主题
-            } else if (data.user.theme_id) {
-              // 如果数据库有记录（虽然访客通常不存 theme_id，但以防万一），也可以用
-              setCurrentThemeId(data.user.theme_id)
-              currentThemeIdRef.current = data.user.theme_id
-              localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, data.user.theme_id)
-            }
+            // 如果是访客，不应该自己做主保留本地主题，而是要完全依赖主人的主题。
+            // 稍后在获取在线用户和历史消息时，会覆盖掉这里设置的任何值。
           }
         }
       })
@@ -194,7 +186,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
             if (owner) {
               ownerIdRef.current = owner.id
               // 访客强制同步主人的主题，覆盖本地存储
-              if (owner.theme_id && owner.theme_id !== savedThemeId) {
+              if (owner.theme_id) {
                 setCurrentThemeId(owner.theme_id)
                 currentThemeIdRef.current = owner.theme_id
                 localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, owner.theme_id)
@@ -286,7 +278,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
             if (ownerMsg) {
               ownerIdRef.current = ownerMsg.user_id
               
-              // 如果访客进入房间时没有本地缓存，且当前没取到在线主人，尝试从主人的历史消息中恢复主题
+              // 如果访客进入房间时，尝试从主人的历史消息中恢复主题（优先于本地缓存）
               if (userType === 'guest' && ownerMsg.users?.theme_id) {
                 const historyThemeId = ownerMsg.users.theme_id
                 setCurrentThemeId(historyThemeId)
