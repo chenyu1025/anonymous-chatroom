@@ -117,7 +117,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
     }, 60000)
 
     // 尝试从本地存储恢复主题
-    const savedThemeId = localStorage.getItem('chatroom_theme_id')
+    const savedThemeId = localStorage.getItem(`chatroom_theme_id_${roomId || 'default'}`)
     if (savedThemeId) {
       setCurrentThemeId(savedThemeId)
       currentThemeIdRef.current = savedThemeId
@@ -165,7 +165,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               // 本地没有（比如清缓存了），才用数据库的
               setCurrentThemeId(data.user.theme_id)
               currentThemeIdRef.current = data.user.theme_id
-              localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+              localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, data.user.theme_id)
             }
           } else {
             // 如果是访客，也优先保留本地主题，防止刷新时闪烁回默认主题
@@ -176,7 +176,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               // 如果数据库有记录（虽然访客通常不存 theme_id，但以防万一），也可以用
               setCurrentThemeId(data.user.theme_id)
               currentThemeIdRef.current = data.user.theme_id
-              localStorage.setItem('chatroom_theme_id', data.user.theme_id)
+              localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, data.user.theme_id)
             }
           }
         }
@@ -197,7 +197,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
               if (owner.theme_id && owner.theme_id !== savedThemeId) {
                 setCurrentThemeId(owner.theme_id)
                 currentThemeIdRef.current = owner.theme_id
-                localStorage.setItem('chatroom_theme_id', owner.theme_id)
+                localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, owner.theme_id)
               }
             } else {
               // 如果没找到在线主人，尝试从历史消息中恢复 Owner ID，或者保持当前本地主题
@@ -219,7 +219,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
   const handleThemeChange = async (themeId: string) => {
     setCurrentThemeId(themeId)
     currentThemeIdRef.current = themeId
-    localStorage.setItem('chatroom_theme_id', themeId)
+    localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, themeId)
     setShowThemeSelector(false)
 
     // 1. 更新数据库中的用户主题
@@ -280,11 +280,19 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
         const res = await fetch(url)
         const data = await res.json()
         if (data.messages) {
-          // 尝试从历史消息中找到主人的 ID
+          // 尝试从历史消息中找到主人的 ID 和主题
           if (!ownerIdRef.current) {
             const ownerMsg = data.messages.find((m: any) => m.user_type === 'owner')
             if (ownerMsg) {
               ownerIdRef.current = ownerMsg.user_id
+              
+              // 如果访客进入房间时没有本地缓存，且当前没取到在线主人，尝试从主人的历史消息中恢复主题
+              if (userType === 'guest' && ownerMsg.users?.theme_id) {
+                const historyThemeId = ownerMsg.users.theme_id
+                setCurrentThemeId(historyThemeId)
+                currentThemeIdRef.current = historyThemeId
+                localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, historyThemeId)
+              }
             }
           }
 
@@ -355,7 +363,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
             if (isGuest && newMessage.user_type === 'owner' && newThemeId) {
               setCurrentThemeId(newThemeId)
               currentThemeIdRef.current = newThemeId
-              localStorage.setItem('chatroom_theme_id', newThemeId)
+              localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, newThemeId)
 
               // 更新所有主人消息的主题
               setMessages(prev => prev.map(msg => {
@@ -503,7 +511,7 @@ export default function ChatRoom({ roomId = null }: ChatRoomProps) {
 
               setCurrentThemeId(newUser.theme_id)
               currentThemeIdRef.current = newUser.theme_id
-              localStorage.setItem('chatroom_theme_id', newUser.theme_id)
+              localStorage.setItem(`chatroom_theme_id_${roomId || 'default'}`, newUser.theme_id)
             }
 
             // 更新该用户所有历史消息的主题
